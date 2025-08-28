@@ -18,12 +18,11 @@ namespace Negocio
         public ManejoComprobantesDatos(IConexion icon)
         {
             _icon = icon;
-            _crud = new CrudManager(icon);
+            _crud = new CrudManager(_icon);
         }
 
         public string ListarComprobantes()
         {
-
             string sql = "SELECT * FROM eltit_conta.conta_comprobante_cabeza WHERE estadoenvio=0";
 
             var dt = _crud.ExecuteConsulta(sql);
@@ -33,11 +32,34 @@ namespace Negocio
             if (dt?.Rows.Count > 0) { 
                 foreach (DataRow row in dt.Rows)
                 {
-                    sb.AppendLine($"{row["folio"]} - {row["n_proveedor"]}");
+                    //sb.AppendLine($"{row["folio"]} - {row["n_proveedor"]}");
+                    sb.AppendLine($"{row["folio"]}");
                 }
             }
 
             return sb.ToString();
+        }
+
+
+        public List<comprobantesDTO>  ListarComprobantesDetallesDto(string xNumero)
+        {
+            string sql = "SELECT * FROM eltit_conta.conta_comprobante_detalle WHERE numero='"+ xNumero +"' ";
+
+            var dt = _crud.ExecuteConsulta(sql);
+            var comprobantes = new List<comprobantesDTO>();
+
+            if (dt != null)
+            {
+
+                foreach (DataRow row in dt.Rows)
+                {
+                    comprobantes.Add(fillComprobantesDetalles(row));
+
+                }
+
+            }
+
+            return comprobantes;
         }
         public List<comprobantesDTO> ListarComprobantesDTO()
         {
@@ -53,12 +75,9 @@ namespace Negocio
                 
                 foreach (DataRow row in dt.Rows)
                 { 
-                    comprobantes.Add(fillComprobantes(row));
-                    
+                    comprobantes.Add(fillComprobantes(row));              
                 }
-
             }
-
             return comprobantes;
         }
 
@@ -67,7 +86,18 @@ namespace Negocio
            return new comprobantesDTO
             {
                 Numero = row["folio"]?.ToString(),
-                Proveedor = row["n_proveedor"]?.ToString(),
+                N_Proveedor = row["n_proveedor"]?.ToString(),
+                Fecha = row["fecha"] != DBNull.Value ? Convert.ToDateTime(row["fecha"]) : null,
+                EstadoEnvio = Convert.ToInt32(row["estadoenvio"])
+            };
+        }
+
+        private comprobantesDTO fillComprobantesDetalles(DataRow row)
+        {
+            return new comprobantesDTO
+            {
+                Numero = row["folio"]?.ToString(),
+                N_Proveedor = row["n_proveedor"]?.ToString(),
                 Fecha = row["fecha"] != DBNull.Value ? Convert.ToDateTime(row["fecha"]) : null,
                 EstadoEnvio = Convert.ToInt32(row["estadoenvio"])
             };

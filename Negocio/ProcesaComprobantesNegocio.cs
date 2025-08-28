@@ -14,12 +14,30 @@ namespace Negocio
         private readonly ManejoComprobantesDatos _comprobanteData;
         private IConexion _icon;
         public ProcesaComprobantesNegocio(IConexion icon)
-        {
-            
+        {   
             _icon = icon;
         }
-        public string ObtenerComprobantesComoString()
+
+
+        public string procesaComprobantes()
         {
+            string listaC = ObtenerComprobantesCabezaList();
+
+
+
+
+            return "Proceso finalizado";
+        }
+
+        public string ObtenerComprobantesCabezaList()
+        {
+            ManejoComprobantesDatos _comprobanteData = new ManejoComprobantesDatos(_icon);
+            return _comprobanteData.ListarComprobantes();
+        }
+
+        public string ObtenerComprobantesDetalle()
+        {
+            ManejoComprobantesDatos _comprobanteData = new ManejoComprobantesDatos(_icon);
             return _comprobanteData.ListarComprobantes();
         }
 
