@@ -42,31 +42,12 @@ namespace EnvioDetallesProveedores
                 cnn.setConnectionString(Config.GetConnectionString(tipoConexionStr));
 
                 var manejoComprobantes = new ProcesaComprobantesNegocio(cnn);
-                //var comprobantes = manejoComprobantes.obtenerComprobnatesPendientes();
-                var comprobantes = manejoComprobantes.ObtenerComprobantesComoString();
+                var comprobantes = manejoComprobantes.procesaComprobantes();
                 MessageBox.Show(comprobantes);
 
 
-                //if (comprobantes.Count > 0)
-                //{
-
-                //    DG_MuestraComprobantes.DataSource = comprobantes;
-
-                //    //foreach (var comprobante in comprobantes)
-                //    //{
-                //    //    Console.WriteLine($"Enviando comprobante: {comprobante.Numero} - {comprobante.Proveedor}");
-                //    //    actualizamos
-                //    //    manejoComprobantes.ActualizaEstadoEnvio("1", Convert.ToInt32(comprobante.Numero));
-
-
-                //    //}
-
                 timerInicio.Stop();
-                //}
-                //else
-                //{
-                //    Console.WriteLine("No hay comprobantes pendientes de envío.");
-                //}
+        
             }
             catch (Exception ex)
             {

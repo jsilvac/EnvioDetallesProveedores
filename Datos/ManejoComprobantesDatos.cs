@@ -21,54 +21,63 @@ namespace Negocio
             _crud = new CrudManager(_icon);
         }
 
-        public string ListarComprobantes()
+        public List<ComprobantesDTO> ListarComprobantes()
         {
             string sql = "SELECT * FROM eltit_conta.conta_comprobante_cabeza WHERE estadoenvio=0";
 
             var dt = _crud.ExecuteConsulta(sql);
 
+            var comprobantes = new List<ComprobantesDTO>();
             var sb = new StringBuilder();
-
-            if (dt?.Rows.Count > 0) { 
-                foreach (DataRow row in dt.Rows)
-                {
-                    //sb.AppendLine($"{row["folio"]} - {row["n_proveedor"]}");
-                    sb.AppendLine($"{row["folio"]}");
-                }
-            }
-
-            return sb.ToString();
-        }
-
-
-        public List<comprobantesDTO>  ListarComprobantesDetallesDto(string xNumero)
-        {
-            string sql = "SELECT * FROM eltit_conta.conta_comprobante_detalle WHERE numero='"+ xNumero +"' ";
-
-            var dt = _crud.ExecuteConsulta(sql);
-            var comprobantes = new List<comprobantesDTO>();
 
             if (dt != null)
             {
 
                 foreach (DataRow row in dt.Rows)
                 {
-                    comprobantes.Add(fillComprobantesDetalles(row));
-
+                    comprobantes.Add(fillComprobantes(row));
                 }
-
             }
 
             return comprobantes;
         }
-        public List<comprobantesDTO> ListarComprobantesDTO()
+
+        public List<ComprobantesDTO> ListarComprobantesDTO()
         {
-            string sql = "SELECT folio, n_proveedor, fecha, estadoenvio " +
-                         "FROM eltit_conta.conta_comprobante_cabeza " +
-                         "WHERE estadoenvio = 0";
+            string sql = """
+                SELECT 
+                  cb.folio,
+                  cb.fecha,
+                  cb.rut_proveedor,
+                  cb.n_proveedor,
+                  cb.correos,
+                  dt.numero,
+                  cb.banco,
+                  cb.ctacte_proveedor,
+                  cb.total,
+                  cb.num_docus,
+                  cb.estadoenvio,
+                  cb.rut_empresa,
+                  cb.empresa,
+                  cb.mensaje,
+                  dt.egreso,
+                  dt.proveedor,
+                  dt.glosa,
+                  dt.td,
+                  dt.monto,
+                  cb.numero AS numeros
+                FROM
+                  eltit_conta.conta_comprobante_cabeza AS cb 
+                  INNER JOIN eltit_conta.conta_comprobante_detalle AS dt 
+                    ON dt.folio = cb.folio 
+                    AND dt.fecha = cb.fecha 
+                    AND dt.proveedor = cb.rut_proveedor 
+                WHERE cb.estadoenvio = '0' 
+                
+                """;
 
             var dt = _crud.ExecuteConsulta(sql);
-            var comprobantes = new List<comprobantesDTO>();
+            var comprobantes = new List<ComprobantesDTO>();
 
             if (dt != null)
             {
@@ -81,26 +90,39 @@ namespace Negocio
             return comprobantes;
         }
 
-        private comprobantesDTO fillComprobantes(DataRow row)
+        private ComprobantesDTO fillComprobantes(DataRow? row)
         {
-           return new comprobantesDTO
-            {
-                Numero = row["folio"]?.ToString(),
-                N_Proveedor = row["n_proveedor"]?.ToString(),
-                Fecha = row["fecha"] != DBNull.Value ? Convert.ToDateTime(row["fecha"]) : null,
-                EstadoEnvio = Convert.ToInt32(row["estadoenvio"])
-            };
-        }
-
-        private comprobantesDTO fillComprobantesDetalles(DataRow row)
-        {
-            return new comprobantesDTO
-            {
-                Numero = row["folio"]?.ToString(),
-                N_Proveedor = row["n_proveedor"]?.ToString(),
-                Fecha = row["fecha"] != DBNull.Value ? Convert.ToDateTime(row["fecha"]) : null,
-                EstadoEnvio = Convert.ToInt32(row["estadoenvio"])
-            };
+           return new ComprobantesDTO
+           {
+               Folio = row["folio"]?.ToString(),
+               Fecha = row["fecha"] != DBNull.Value ? Convert.ToDateTime(row["fecha"]) : null,
+               Rut_Proveedor = row["rut_proveedor"]?.ToString(),
+               N_Proveedor = row["n_proveedor"]?.ToString(),
+               Correos = row["correos"]?.ToString()
+                                         .Split(';', StringSplitOptions.RemoveEmptyEntries)   // Separa en partes
+                                        .Select(correo => correo.Trim())                     // Recorre cada elemento y lo procesa
+                                        .ToList(),
+               Numero = row["numero"]?.ToString(),
+               Banco = row["banco"]?.ToString(),
+               CtaCte_Proveedor = row["ctacte_proveedor"]?.ToString(),
+               Total = Convert.ToDouble( row["total"]?.ToString()),
+               Num_Docus = row["num_docus"]?.ToString()
+                                           .Split(' ', StringSplitOptions.RemoveEmptyEntries)  // separa por espacios
+                                          .Select(x => int.Parse(x))                          // convierte cada pedazo a int
+                                          .ToList(),
+               EstadoEnvio = Convert.ToInt32(row["estadoenvio"]),
+               Rut_Empresa = row["rut_empresa"]?.ToString(),
+               Empresa = row["empresa"]?.ToString(),
+               Mensaje = row["mensaje"]?.ToString(),
+               Egreso = row["egreso"]?.ToString(),
+               Proveedor = row["proveedor"]?.ToString(),
+               Glosa = row["glosa"]?.ToString(),
+               Td = row["td"]?.ToString(),
+               Monto = Convert.ToDouble(row["monto"]?.ToString()),
+               Numeros = row["numeros"]?.ToString()
+                                           .Split(' ', StringSplitOptions.RemoveEmptyEntries)  // separa por espacios
+                                          .ToList(),
+           };
         }
 
         public bool ActualizaEstadoEnvio(string estadoEnvio, int numeroComprobante)

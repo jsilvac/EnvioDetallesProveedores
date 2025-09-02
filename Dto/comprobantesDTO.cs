@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Dto
 {
-    public class comprobantesDTO
+    public class ComprobantesDTO
     {
         //cabeza
         public string Folio { get; set; }
@@ -18,8 +18,8 @@ namespace Dto
         public DateTime? Fecha { get; set; }
         public List<string> Correos { get; set; }
         public double Total { get; set; }
-        public List<int> Numeros { get; set; }
-        public int Num_numeros { get; set; }
+        public List<int> Num_Docus { get; set; }
+
         public int EstadoEnvio { get; set; }
         public string Rut_Empresa { get; set; }
         public string Empresa { get; set; }
@@ -32,8 +32,10 @@ namespace Dto
         public string Td { get; set; }
         public double Monto { get; set; }
 
+        public List<string> Numeros { get; set; }
 
-        public comprobantesDTO() { }
+
+        public ComprobantesDTO() { }
     }
 }
 
