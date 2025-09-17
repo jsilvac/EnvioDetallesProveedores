@@ -14,6 +14,7 @@ using iText.IO.Font.Constants;
 using iText.Kernel.Font;
 using static System.Net.Mime.MediaTypeNames;
 using Image = iText.Layout.Element.Image;
+using Newtonsoft.Json.Linq;
 
 
 
@@ -127,22 +128,16 @@ namespace Negocio
 
                     // Añadir resumen/header de cierre
                     document.Add(new Paragraph("\n"));
-                    document.Add(new Paragraph($" {headerDto.Rut_Proveedor} - {headerDto.N_Proveedor}").SetFontSize(10)).SetTextAlignment(TextAlignment.CENTER);
+                    document.Add(new Paragraph($" {headerDto.Mensaje}").SetFontSize(10)).SetTextAlignment(TextAlignment.CENTER);
+                    //document.Add(new Paragraph("\n"));
                     document.Add(new Paragraph($" {headerDto.Empresa}").SetFontSize(10)).SetTextAlignment(TextAlignment.CENTER);
 
                    
                     // --- IMPORTANTE: Flush del document ---
                     document.Flush();
 
-                    //// 2) STAMP: agregar header (logo) sobre cada página
-                    //string rutaLogo = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "logo.png");
-                    //if (File.Exists(rutaLogo))
-                    //{
+                    
 
-                    //    AddHeaderToAllPages(pdf, rutaLogo, 100f, 50f, 36f);
-                    //}
-
-                    // 3) Cerrar document
                     document.Close();
                 }
 
