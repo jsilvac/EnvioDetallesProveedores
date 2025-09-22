@@ -18,7 +18,7 @@ namespace Dto
         public DateTime? Fecha { get; set; }
         public List<string> Correos { get; set; }
         public double Total { get; set; }
-        public List<int> Num_Docus { get; set; }
+        public string Num_Docus { get; set; }
 
         public int EstadoEnvio { get; set; }
         public string Rut_Empresa { get; set; }

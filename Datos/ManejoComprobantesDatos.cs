@@ -92,37 +92,34 @@ namespace Negocio
 
         private ComprobantesDTO fillComprobantes(DataRow? row)
         {
-           return new ComprobantesDTO
-           {
-               Folio = row["folio"]?.ToString(),
-               Fecha = row["fecha"] != DBNull.Value ? Convert.ToDateTime(row["fecha"]) : null,
-               Rut_Proveedor = row["rut_proveedor"]?.ToString(),
-               N_Proveedor = row["n_proveedor"]?.ToString(),
-               Correos = row["correos"]?.ToString()
-                                         .Split(';', StringSplitOptions.RemoveEmptyEntries)   // Separa en partes
-                                        .Select(correo => correo.Trim())                     // Recorre cada elemento y lo procesa
-                                        .ToList(),
-               Numero = row["numero"]?.ToString(),
-               Banco = row["banco"]?.ToString(),
-               CtaCte_Proveedor = row["ctacte_proveedor"]?.ToString(),
-               Total = Convert.ToDouble( row["total"]?.ToString()),
-               Num_Docus = row["num_docus"]?.ToString()
-                                           .Split(' ', StringSplitOptions.RemoveEmptyEntries)  // separa por espacios
-                                          .Select(x => int.Parse(x))                          // convierte cada pedazo a int
-                                          .ToList(),
-               EstadoEnvio = Convert.ToInt32(row["estadoenvio"]),
-               Rut_Empresa = row["rut_empresa"]?.ToString(),
-               Empresa = row["empresa"]?.ToString(),
-               Mensaje = row["mensaje"]?.ToString(),
-               Egreso = row["egreso"]?.ToString(),
-               Proveedor = row["proveedor"]?.ToString(),
-               Glosa = row["glosa"]?.ToString(),
-               Td = row["td"]?.ToString(),
-               Monto = Convert.ToDouble(row["monto"]?.ToString()),
-               Numeros = row["numeros"]?.ToString()
-                                           .Split(' ', StringSplitOptions.RemoveEmptyEntries)  // separa por espacios
-                                          .ToList(),
-           };
+            return new ComprobantesDTO
+            {
+                Folio = row["folio"]?.ToString(),
+                Fecha = row["fecha"] != DBNull.Value ? Convert.ToDateTime(row["fecha"]) : null,
+                Rut_Proveedor = row["rut_proveedor"]?.ToString(),
+                N_Proveedor = row["n_proveedor"]?.ToString(),
+                Correos = row["correos"]?.ToString()
+                                          .Split(';', StringSplitOptions.RemoveEmptyEntries)   // Separa en partes
+                                         .Select(correo => correo.Trim())                     // Recorre cada elemento y lo procesa
+                                         .ToList(),
+                Numero = row["numero"]?.ToString(),
+                Banco = row["banco"]?.ToString(),
+                CtaCte_Proveedor = row["ctacte_proveedor"]?.ToString(),
+                Total = Convert.ToDouble(row["total"]?.ToString()),
+                Num_Docus = row["num_docus"]?.ToString(),
+                EstadoEnvio = Convert.ToInt32(row["estadoenvio"]),
+                Rut_Empresa = row["rut_empresa"]?.ToString(),
+                Empresa = row["empresa"]?.ToString(),
+                Mensaje = row["mensaje"]?.ToString(),
+                Egreso = row["egreso"]?.ToString(),
+                Proveedor = row["proveedor"]?.ToString(),
+                Glosa = row["glosa"]?.ToString(),
+                Td = row["td"]?.ToString(),
+                Monto = Convert.ToDouble(row["monto"]?.ToString()),
+                Numeros = row["numeros"]?.ToString()
+                                            .Split(' ', StringSplitOptions.RemoveEmptyEntries)  // separa por espacios
+                                           .ToList(),
+            };
         }
 
         public bool ActualizaEstadoEnvio(string estadoEnvio, int numeroComprobante)

@@ -73,11 +73,12 @@ namespace Negocio
                 using (var document = new Document(pdf))
                 {
 
-                   
+                    string fecha = DateTime.Now.ToString("dd-MM-yyyy");
+                    var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
                     var comprobantesFiltrados = comprobantes.Where(c => c.Numeros.Contains(c.Numero.ToString())).ToList();
 
                     comprobantes = comprobantesFiltrados;
-                 
+
                     // Obtener el primer comprobante para el header (todos comparten mismo folio)
                     var headerDto = comprobantes.First();
 
@@ -88,23 +89,24 @@ namespace Negocio
                     {
                         // Agregar logo al inicio del documento
                         AddLogoAsHeader(document, rutaLogo);
-                       
-                    }
 
+                    }
                     // --- Generar contenido del PDF ---
-                    var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+                    document.Add(new Paragraph($"Comprobante de Pago").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT));
+                    document.Add(new Paragraph($"Fecha de emisión:"+fecha).SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT));
+
 
                     // Cabecera de la tabla de detalle
                     var table = new Table(7).UseAllAvailableWidth();
                     var headers = new[] { "EGRESO", "PROVEEDOR", "GLOSA", "TD", "NUMERO", "MONTO" };
                     foreach (var h in headers)
-                        if(h == "GLOSA")
+                        if (h == "GLOSA")
                         {
-                            table.AddHeaderCell(new Cell(1,2).Add(new Paragraph(h).SetFont(bold).SetFontSize(9)));
+                            table.AddHeaderCell(new Cell(1, 2).Add(new Paragraph(h).SetFont(bold).SetFontSize(10)));
                         }
-                        else 
-                        { 
-                            table.AddHeaderCell(new Cell().Add(new Paragraph(h).SetFont(bold).SetFontSize(9)));
+                        else
+                        {
+                            table.AddHeaderCell(new Cell().Add(new Paragraph(h).SetFont(bold).SetFontSize(10)));
                         }
 
                     // Filas detalle
@@ -118,27 +120,43 @@ namespace Negocio
                         table.AddCell(new Cell().Add(new Paragraph(c.Numero.ToString()).SetFontSize(9)));
                         table.AddCell(new Cell().Add(new Paragraph($"${c.Monto:N0}").SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
                     }
-
-                    document.Add(table);
-
-                    // Calcular total sumando todos los montos del grupo
-                    decimal totalGrupo = (decimal)comprobantes.Sum(c => c.Monto);
-                    document.Add(new Paragraph($"Total: ${totalGrupo:N0}").SetTextAlignment(TextAlignment.RIGHT).SetFontSize(12));
-
-
-                    // Añadir resumen/header de cierre
-                    document.Add(new Paragraph("\n"));
-                    document.Add(new Paragraph($" {headerDto.Mensaje}").SetFontSize(10)).SetTextAlignment(TextAlignment.CENTER);
-                    //document.Add(new Paragraph("\n"));
-                    document.Add(new Paragraph($" {headerDto.Empresa}").SetFontSize(10)).SetTextAlignment(TextAlignment.CENTER);
-
-                   
-                    // --- IMPORTANTE: Flush del document ---
-                    document.Flush();
+                    table.AddCell(new Cell().Add(new Paragraph("PROVEEDOR").SetFont(bold).SetFontSize(10)).SetTextAlignment(TextAlignment.LEFT));
+                    table.AddCell(new Cell().Add(new Paragraph("NOMBRE").SetFont(bold).SetFontSize(10)).SetTextAlignment(TextAlignment.LEFT));
+                    table.AddCell(new Cell().Add(new Paragraph("BANCO").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
+                    table.AddCell(new Cell().Add(new Paragraph("CUENTA").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
+                    table.AddCell(new Cell().Add(new Paragraph("N° DCTS.").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
+                    table.AddCell(new Cell().Add(new Paragraph("CORREO(S)").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
+                    table.AddCell(new Cell().Add(new Paragraph("TOTAL").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.CENTER)));
+                    table.AddCell(new Cell().Add(new Paragraph(headerDto.Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
+                    table.AddCell(new Cell().Add(new Paragraph(headerDto.N_Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
+                    table.AddCell(new Cell().Add(new Paragraph(headerDto.Banco).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+                    table.AddCell(new Cell().Add(new Paragraph(headerDto.CtaCte_Proveedor).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+                    table.AddCell(new Cell().Add(new Paragraph(headerDto.Num_Docus).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+                    string listaCorreos = string.Join("\n", headerDto.Correos);
+                    table.AddCell(new Cell().Add(new Paragraph(listaCorreos).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+                    table.AddCell(new Cell().Add(new Paragraph("$"+headerDto.Total.ToString()).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
 
                     
 
+                    document.Add(table);
+
+                  
+                    // Añadir resumen/header de cierre
+                    document.Add(new Paragraph("\n"));
+                    document.Add(new Paragraph($" {headerDto.Mensaje}").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
+                    //document.Add(new Paragraph("\n"));
+                    //document.Add(new Paragraph($" {headerDto.Empresa}").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
+
+                   
+                    document.Flush();
+
                     document.Close();
+
+                    /// aki region envio docuemnto por corre ////
+                    /// 
+
+
+
                 }
 
                 return exportFile;
