@@ -1,4 +1,5 @@
-﻿using Repository;
+﻿using MySql.Data.MySqlClient;
+using Repository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,20 +27,44 @@ namespace Datos
             {
                 foreach (System.Data.DataRow row in dt.Rows)
                 {
-                    proveedores.Add(fillProveedor(row));
+                    proveedores.Add(fillProveedores(row));
                 }
             }
             return proveedores;
         }
-        private Dto.ProveedorDTO fillProveedor(System.Data.DataRow row)
+        private Dto.ProveedorDTO fillProveedores(System.Data.DataRow row)
         {
             var proveedor = new Dto.ProveedorDTO();
-            proveedor.Rut_Proveedor = row["rut_proveedor"] != DBNull.Value ? Convert.ToString(row["rut_proveedor"]) : string.Empty;
-            proveedor.N_Proveedor = row["n_proveedor"] != DBNull.Value ? Convert.ToString(row["n_proveedor"]) : string.Empty;
+            proveedor.Rut = row["rut"] != DBNull.Value ? Convert.ToString(row["rut"]) : string.Empty;
+            proveedor.Nombre = row["nombre"] != DBNull.Value ? Convert.ToString(row["nombre"]) : string.Empty;
+            proveedor.ModoPago = row["modopago"] != DBNull.Value ? Convert.ToString(row["modopago"]) : string.Empty;
             proveedor.Banco = row["banco"] != DBNull.Value ? Convert.ToString(row["banco"]) : string.Empty;
-            proveedor.CtaCte_Proveedor = row["ctacte_proveedor"] != DBNull.Value ? Convert.ToString(row["ctacte_proveedor"]) : string.Empty;
-            proveedor.TipoPago = row["tipo_pago"] != DBNull.Value ? Convert.ToString(row["tipo_pago"]) : string.Empty;
+            proveedor.Sucursal = row["sucursal"] != DBNull.Value ? Convert.ToString(row["sucursal"]) : string.Empty;
+            proveedor.Cuentacorreinte = row["cuentacorriente"] != DBNull.Value ? Convert.ToString(row["cuentacorriente"]) : string.Empty;
+            proveedor.RutRetira = row["rutretira"] != DBNull.Value ? Convert.ToString(row["rutretira"]) : string.Empty;
+            proveedor.NombreRetira = row["nombreretira"] != DBNull.Value ? Convert.ToString(row["nombreretira"]) : string.Empty;
+            proveedor.Email = row["email"] != DBNull.Value ? Convert.ToString(row["email"]) : string.Empty;
+            proveedor.Plazo = row["plazo"] != DBNull.Value ? Convert.ToString(row["plazo"]) : string.Empty;
+
             return proveedor;
+        }
+
+        public Dto.ProveedorDTO ObtenerProveedorPorRut(string rut)
+        {
+            rut = rut.Replace("-", "");
+            string sql = $"SELECT * FROM eltit_conta.cuentascorrientes_datos_pago WHERE rut ='{rut}'";
+
+            var dt = _crud.ExecuteConsulta(sql);
+            Dto.ProveedorDTO proveedor = null;
+
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                // Tomamos solo la primera fila encontrada
+                proveedor = fillProveedores(dt.Rows[0]);
+            }
+
+            return proveedor;
+
         }
     }
 }

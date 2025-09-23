@@ -15,6 +15,7 @@ using iText.Kernel.Font;
 using static System.Net.Mime.MediaTypeNames;
 using Image = iText.Layout.Element.Image;
 using Newtonsoft.Json.Linq;
+using Datos;
 
 
 
@@ -23,12 +24,13 @@ namespace Negocio
     public class ProcesaComprobantesNegocio
     {
         private readonly ManejoComprobantesDatos _comprobanteData;
+        private readonly ProveedorNegocio _proveedorNegocio;
         private IConexion _icon;
         private PDF _pdf;
         public ProcesaComprobantesNegocio(IConexion icon)
-        {   
+        {
             _icon = icon;
-            _pdf = new PDF();
+            //_pdf = new PDF();
         }
 
         public List<ComprobantesDTO> ObtenerComprobantes()
@@ -73,51 +75,68 @@ namespace Negocio
                 using (var document = new Document(pdf))
                 {
 
-                    string fecha = DateTime.Now.ToString("dd-MM-yyyy");
                     var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
                     var comprobantesFiltrados = comprobantes.Where(c => c.Numeros.Contains(c.Numero.ToString())).ToList();
 
                     comprobantes = comprobantesFiltrados;
 
-                    // Obtener el primer comprobante para el header (todos comparten mismo folio)
                     var headerDto = comprobantes.First();
 
-
-                    // --- AGREGAR LOGO PRIMERO (como header) ---
+                    string fecha = DateTime.Now.ToString("dd-MM-yyyy");
+                    // --- AGREGAR LOGO  ---
                     string rutaLogo = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "logo.png");
+                   
+                    PdfPage page = pdf.AddNewPage();
+                    var pageSize = page.GetPageSize();
+
+                    PdfCanvas canvas = new PdfCanvas(page);
+                    Canvas modelCanvas = new Canvas(canvas, pageSize);
+
+                    // Logo
                     if (File.Exists(rutaLogo))
                     {
-                        // Agregar logo al inicio del documento
-                        AddLogoAsHeader(document, rutaLogo);
+                        var img = new Image(ImageDataFactory.Create(rutaLogo))
+                            .ScaleToFit(80, 80)
+                            .SetFixedPosition(pageSize.GetRight() - 113, pageSize.GetTop() - 50);
 
+                        modelCanvas.Add(img);
                     }
-                    // --- Generar contenido del PDF ---
-                    document.Add(new Paragraph($"Comprobante de Pago").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT));
-                    document.Add(new Paragraph($"Fecha de emisión:"+fecha).SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT));
 
+                    // Texto
+                    modelCanvas.Add(new Paragraph("Comprobante de Pago")
+                        .SetFont(bold).SetFontSize(12)
+                        .SetFixedPosition(pageSize.GetLeft() + 35, pageSize.GetTop() - 40, 500));
 
-                    // Cabecera de la tabla de detalle
-                    var table = new Table(7).UseAllAvailableWidth();
+                    modelCanvas.Add(new Paragraph("Fecha de emisión: " + fecha)
+                        .SetFont(bold).SetFontSize(10)
+                        .SetFixedPosition(pageSize.GetLeft() + 35, pageSize.GetTop() - 60, 500));
+
+                    modelCanvas.Close();
+
+                    document.Add(new Paragraph("\n"));
+
+                    float[] cellWidth = { 20f, 80f, 80f, 20f, 80f, 50f, 60f }; 
+                    Table table = new Table(UnitValue.CreatePercentArray(cellWidth))
+                        .UseAllAvailableWidth();
+
                     var headers = new[] { "EGRESO", "PROVEEDOR", "GLOSA", "TD", "NUMERO", "MONTO" };
                     foreach (var h in headers)
+                    {
                         if (h == "GLOSA")
-                        {
                             table.AddHeaderCell(new Cell(1, 2).Add(new Paragraph(h).SetFont(bold).SetFontSize(10)));
-                        }
                         else
-                        {
                             table.AddHeaderCell(new Cell().Add(new Paragraph(h).SetFont(bold).SetFontSize(10)));
-                        }
+                    }
 
                     // Filas detalle
                     foreach (var c in comprobantes)
                     {
 
-                        table.AddCell(new Cell().Add(new Paragraph(c.Egreso).SetFontSize(9)));
-                        table.AddCell(new Cell().Add(new Paragraph(c.Proveedor).SetFontSize(9)));
-                        table.AddCell(new Cell(1, 2).Add(new Paragraph(c.Glosa).SetFontSize(9)));
+                        table.AddCell(new Cell().Add(new Paragraph(c.Egreso).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
+                        table.AddCell(new Cell().Add(new Paragraph(c.Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
+                        table.AddCell(new Cell(1, 2).Add(new Paragraph(c.Glosa).SetFontSize(9)).SetTextAlignment(TextAlignment.LEFT));
                         table.AddCell(new Cell().Add(new Paragraph(c.Td).SetFontSize(9)));
-                        table.AddCell(new Cell().Add(new Paragraph(c.Numero.ToString()).SetFontSize(9)));
+                        table.AddCell(new Cell().Add(new Paragraph(c.Numero.ToString()).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
                         table.AddCell(new Cell().Add(new Paragraph($"${c.Monto:N0}").SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
                     }
                     table.AddCell(new Cell().Add(new Paragraph("PROVEEDOR").SetFont(bold).SetFontSize(10)).SetTextAlignment(TextAlignment.LEFT));
@@ -128,34 +147,52 @@ namespace Negocio
                     table.AddCell(new Cell().Add(new Paragraph("CORREO(S)").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
                     table.AddCell(new Cell().Add(new Paragraph("TOTAL").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.CENTER)));
                     table.AddCell(new Cell().Add(new Paragraph(headerDto.Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
-                    table.AddCell(new Cell().Add(new Paragraph(headerDto.N_Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
+                    table.AddCell(new Cell().Add(new Paragraph(headerDto.N_Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.LEFT));
                     table.AddCell(new Cell().Add(new Paragraph(headerDto.Banco).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
                     table.AddCell(new Cell().Add(new Paragraph(headerDto.CtaCte_Proveedor).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
                     table.AddCell(new Cell().Add(new Paragraph(headerDto.Num_Docus).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
                     string listaCorreos = string.Join("\n", headerDto.Correos);
                     table.AddCell(new Cell().Add(new Paragraph(listaCorreos).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
-                    table.AddCell(new Cell().Add(new Paragraph("$"+headerDto.Total.ToString()).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
-
-                    
+                    table.AddCell(new Cell().Add(new Paragraph("$" + headerDto.Total.ToString()).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
 
                     document.Add(table);
+                    var tipoPago="";
+                    var prov = ObtenerProveedor(headerDto.Proveedor);
+                    
+                    if (prov.ModoPago != null)
+                    {
+                        tipoPago= prov.ModoPago;
+                        
+                        switch (prov.ModoPago)
+                        {
+                            case "0":
+                                tipoPago = "CANCELACION DE FACTURAS VIA CHEQUE";
+                                break;
+                            case "1":
+                                tipoPago = "CANCELACION DE FACTURAS VIA VALE VISTA";
+                                break;
+                            case "3":
+                                tipoPago = "CANCELACION DE FACTURAS VIA TRANSFERENCIA BANCARIA";
+                                break;
+                            default:
+                                tipoPago = "CANCELACION DE FACTURAS";
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        tipoPago = "CANCELACION DE FACTURAS";
+                    }
 
-                  
-                    // Añadir resumen/header de cierre
-                    document.Add(new Paragraph("\n"));
-                    document.Add(new Paragraph($" {headerDto.Mensaje}").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
-                    //document.Add(new Paragraph("\n"));
-                    //document.Add(new Paragraph($" {headerDto.Empresa}").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
+                    document.Add(new Paragraph($"{tipoPago}\n").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
+                    document.Add(new Paragraph($"DEPARTAMENTO PAGO DE PROVEEDORES\n").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
+                    document.Add(new Paragraph($" {headerDto.Empresa}").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
 
-                   
                     document.Flush();
-
                     document.Close();
 
                     /// aki region envio docuemnto por corre ////
                     /// 
-
-
 
                 }
 
@@ -168,51 +205,10 @@ namespace Negocio
             }
         }
 
-        private void AddLogoAsHeader(Document document, string rutaLogo)
+        public ProveedorDTO  ObtenerProveedor(string xRut)
         {
-            try
-            {
-                ImageData imageData = ImageDataFactory.Create(rutaLogo);
-                Image logo = new Image(imageData);
-
-                // Ajustar tamaño del logo (opcional)
-                logo.SetWidth(100f);
-                logo.SetHeight(40f);
-                logo.SetAutoScaleHeight(false);
-
-                // Centrar el logo
-                logo.SetHorizontalAlignment(HorizontalAlignment.RIGHT);
-
-                // Agregar logo al documento
-                document.Add(logo);
-
-                // Agregar espacio después del logo
-                document.Add(new Paragraph("\n"));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error agregando logo: {ex.Message}");
-            }
-        }
-
-        // Método para agregar header en todas las páginas (debe estar definido)
-        private void AddHeaderToAllPages(PdfDocument pdf, string imagePath, float maxWidth, float maxHeight, float marginLeft)
-        {
-            // Tu implementación existente para agregar el logo
-            ImageData imageData = ImageDataFactory.Create(imagePath);
-            Image image = new Image(imageData);
-            image.ScaleToFit(maxWidth, maxHeight);
-
-            for (int i = 1; i <= pdf.GetNumberOfPages(); i++)
-            {
-                PdfPage page = pdf.GetPage(i);
-                PdfCanvas pdfCanvas = new PdfCanvas(page.NewContentStreamBefore(), page.GetResources(), pdf);
-                Canvas canvas = new Canvas(pdfCanvas, page.GetPageSize());
-
-                image.SetFixedPosition(marginLeft, page.GetPageSize().GetHeight() - maxHeight - 20);
-                canvas.Add(image);
-                canvas.Close();
-            }
+            ProveedorDatos _proveedorNegocio = new ProveedorDatos(_icon);
+            return _proveedorNegocio.ObtenerProveedorPorRut(xRut);
         }
 
     }

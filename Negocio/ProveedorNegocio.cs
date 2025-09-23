@@ -17,5 +17,10 @@ namespace Negocio
         {
             return _proveedorDatos.ListarProveedores();
         }
+        public Dto.ProveedorDTO ObtenerProveedorPorRut(string rut)
+        {
+            return _proveedorDatos.ObtenerProveedorPorRut(rut);
+        }
+
     }
 }
