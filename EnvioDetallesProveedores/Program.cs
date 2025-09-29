@@ -17,14 +17,6 @@ namespace EnvioDetallesProveedores
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
 
-            //IConfigurationRoot Config;
-
-
-            //Config = new ConfigurationBuilder()
-            //    .SetBasePath(Directory.GetCurrentDirectory())
-            //    .AddJsonFile("appsettings.json")
-            //    .Build();
-
             IConfigurationRoot Config = ConfiguraInicio.ConfiguraInicioApp();
 
             Application.Run(new Form1(Config));

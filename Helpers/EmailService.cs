@@ -11,7 +11,7 @@ namespace Helpers
             _emailFactory = emailFactory;
         }
 
-        public async Task SendEmailAsync(string subject, string body, List<string> destinatarios)
+        public async Task SendEmailAsync(string subject, string body, List<string> destinatarios, string adjunto)
         {
             using var client = _emailFactory.CreateSmtpClient();
             var message = new MailMessage
@@ -22,6 +22,12 @@ namespace Helpers
                 IsBodyHtml = true
             };
 
+            // Add attachments if provided
+            if (!string.IsNullOrEmpty(adjunto))
+            {
+                message.Attachments.Add(new Attachment(adjunto));
+            }
+
             foreach (var destinatario in destinatarios)
             {
                 message.To.Add(destinatario);
@@ -30,4 +36,5 @@ namespace Helpers
             await client.SendMailAsync(message);
         }
     }
+    
 }

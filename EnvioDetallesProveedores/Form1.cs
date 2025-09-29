@@ -31,6 +31,7 @@ namespace EnvioDetallesProveedores
             try
             {
                 string tipoConexionStr = Config["TipoConexion"];
+                string tipoCorreoStr = Config["TipoCorreo"] ?? "Gmail";
 
                 if (!Enum.TryParse<TipoConexion>(tipoConexionStr, out var tipoConexion))
                 {

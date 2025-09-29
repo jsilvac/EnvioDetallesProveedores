@@ -1,9 +1,7 @@
 ﻿using Dto;
 using Repository;
-using iText.Kernel.Geom;
 using Path = System.IO.Path;
 using Helpers;
-using iText.Kernel.Pdf.Event;
 using iText.IO.Image;
 using iText.Kernel.Pdf.Canvas;
 using iText.Kernel.Pdf;
@@ -12,10 +10,11 @@ using iText.Layout.Properties;
 using iText.Layout;
 using iText.IO.Font.Constants;
 using iText.Kernel.Font;
-using static System.Net.Mime.MediaTypeNames;
 using Image = iText.Layout.Element.Image;
-using Newtonsoft.Json.Linq;
 using Datos;
+using Microsoft.Extensions.Configuration;
+
+
 
 
 
@@ -23,23 +22,28 @@ namespace Negocio
 {
     public class ProcesaComprobantesNegocio
     {
-        private readonly ManejoComprobantesDatos _comprobanteData;
+       // private readonly ManejoComprobantesDatos _comprobanteData;
         private readonly ProveedorNegocio _proveedorNegocio;
+        private readonly EmailService _emailService;
+        private readonly EmailFactory _emailFactory;
+        private readonly IConfigurationRoot _config;
         private IConexion _icon;
         private PDF _pdf;
         public ProcesaComprobantesNegocio(IConexion icon)
         {
             _icon = icon;
-            //_pdf = new PDF();
         }
-
+        public ProcesaComprobantesNegocio(IConexion icon, EmailFactory emailFactory)
+        {
+            _icon = icon;
+            //_config = config;
+            _emailFactory = emailFactory; 
+        }
         public List<ComprobantesDTO> ObtenerComprobantes()
         {
             ManejoComprobantesDatos _comprobanteData = new ManejoComprobantesDatos(_icon);
             return _comprobanteData.ListarComprobantesDTO();
         }
-
-
         public string procesaComprobantes()
         {
             var listaC = ObtenerComprobantes();
@@ -63,7 +67,7 @@ namespace Negocio
             return $"Proceso finalizado. Se generaron {comprobantesAgrupados.Count} archivos PDF.";
         }
 
-        private string GenerarPdfConHeader(string rutaSalida, string nombreArchivo, List<ComprobantesDTO> comprobantes)
+        private async Task<string> GenerarPdfConHeader(string rutaSalida, string nombreArchivo, List<ComprobantesDTO> comprobantes)
         {
             try
             {
@@ -193,6 +197,8 @@ namespace Negocio
 
                     /// aki region envio docuemnto por corre ////
                     /// 
+                    EmailService _emailService = new EmailService(_emailFactory);
+                    await _emailService.SendEmailAsync("Envío comprobantes contables", headerDto.Mensaje,[ "este","otro"], exportFile);
 
                 }
 
@@ -210,6 +216,7 @@ namespace Negocio
             ProveedorDatos _proveedorNegocio = new ProveedorDatos(_icon);
             return _proveedorNegocio.ObtenerProveedorPorRut(xRut);
         }
+
 
     }
 }
