@@ -13,21 +13,33 @@ namespace Helpers
             _configuration = configuration;
         }
 
-        public SmtpClient CreateSmtpClient()
+        public SmtpClient? CreateSmtpClient()
         {
-            string tipoCorreo = _configuration["TipoCorreo"] ?? "Gmail";
-            var correoConfig = _configuration.GetSection($"Correo:{tipoCorreo}");
+            string provider = _configuration["EmailSettings:DefaultProvider"] ?? "Gmail";
 
-            var client = new SmtpClient
+            // Si el proveedor es Mailchimp Transactional (o Mailchimp en general), no usamos SMTP
+            if (provider.StartsWith("Mailchimp", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var correoConfig = _configuration.GetSection($"EmailSettings:Providers:{provider}");
+
+            return new SmtpClient
             {
                 Host = correoConfig["Host"],
                 Port = int.Parse(correoConfig["Port"]),
-                Credentials = new NetworkCredential(correoConfig["User"], correoConfig["Password"]),
+                Credentials = new NetworkCredential(correoConfig["UserName"], correoConfig["Password"]),
                 EnableSsl = bool.Parse(correoConfig["EnableSsl"] ?? "true")
             };
-
-            return client;
         }
 
+        public MailchimpConfig? GetMailchimpConfig()
+        {
+            string provider = _configuration["EmailSettings:DefaultProvider"] ?? "MailchimpTransactional";
+
+            var section = _configuration.GetSection($"EmailSettings:Providers:{provider}");
+            return section.Exists() ? section.Get<MailchimpConfig>() : null;
+        }
     }
+
+
 }

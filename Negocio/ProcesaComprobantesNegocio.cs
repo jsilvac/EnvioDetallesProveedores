@@ -15,9 +15,6 @@ using Datos;
 using Microsoft.Extensions.Configuration;
 
 
-
-
-
 namespace Negocio
 {
     public class ProcesaComprobantesNegocio

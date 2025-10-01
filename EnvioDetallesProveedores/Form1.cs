@@ -22,8 +22,6 @@ namespace EnvioDetallesProveedores
         private void button1_Click(object sender, EventArgs e)
         {
 
-            
-            
         }
 
         private void timerInicio_Tick(object sender, EventArgs e)
@@ -31,7 +29,7 @@ namespace EnvioDetallesProveedores
             try
             {
                 string tipoConexionStr = Config["TipoConexion"];
-                string tipoCorreoStr = Config["TipoCorreo"] ?? "Gmail";
+
 
                 if (!Enum.TryParse<TipoConexion>(tipoConexionStr, out var tipoConexion))
                 {
