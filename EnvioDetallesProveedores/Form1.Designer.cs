@@ -30,28 +30,30 @@
         {
             components = new System.ComponentModel.Container();
             flowLayoutPanel1 = new FlowLayoutPanel();
-            DG_MuestraComprobantes = new DataGridView();
+            txt_log = new RichTextBox();
             timerInicio = new System.Windows.Forms.Timer(components);
             flowLayoutPanel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)DG_MuestraComprobantes).BeginInit();
             SuspendLayout();
             // 
             // flowLayoutPanel1
             // 
-            flowLayoutPanel1.Controls.Add(DG_MuestraComprobantes);
+            flowLayoutPanel1.Controls.Add(txt_log);
             flowLayoutPanel1.Location = new Point(-1, 0);
             flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(419, 674);
+            flowLayoutPanel1.Size = new Size(419, 501);
             flowLayoutPanel1.TabIndex = 0;
             flowLayoutPanel1.WrapContents = false;
             // 
-            // DG_MuestraComprobantes
+            // txt_log
             // 
-            DG_MuestraComprobantes.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            DG_MuestraComprobantes.Location = new Point(3, 3);
-            DG_MuestraComprobantes.Name = "DG_MuestraComprobantes";
-            DG_MuestraComprobantes.Size = new Size(416, 489);
-            DG_MuestraComprobantes.TabIndex = 1;
+            txt_log.BackColor = SystemColors.MenuText;
+            txt_log.Font = new Font("Consolas", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            txt_log.ForeColor = Color.Lime;
+            txt_log.Location = new Point(3, 3);
+            txt_log.Name = "txt_log";
+            txt_log.Size = new Size(406, 481);
+            txt_log.TabIndex = 0;
+            txt_log.Text = "";
             // 
             // timerInicio
             // 
@@ -68,14 +70,13 @@
             Name = "Form1";
             Text = "Form1";
             flowLayoutPanel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)DG_MuestraComprobantes).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
 
         private FlowLayoutPanel flowLayoutPanel1;
-        private DataGridView DG_MuestraComprobantes;
         private System.Windows.Forms.Timer timerInicio;
+        private RichTextBox txt_log;
     }
 }

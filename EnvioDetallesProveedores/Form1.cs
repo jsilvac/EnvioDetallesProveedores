@@ -5,17 +5,19 @@ using static Org.BouncyCastle.Math.EC.ECCurve;
 using Microsoft.Extensions.Configuration;
 
 
-
-
 namespace EnvioDetallesProveedores
 {
     public partial class Form1 : Form
     {
         private IConfigurationRoot Config;
+        
+        private readonly ILogger _logger;
+
         public Form1(IConfigurationRoot ConfigInit)
         {
             InitializeComponent();
             Config = ConfigInit;
+            _logger = new FormLogger(txt_log);
         }
 
 
@@ -23,6 +25,12 @@ namespace EnvioDetallesProveedores
         {
 
         }
+
+        private string FormatearMensaje(string mensaje)
+        {
+             return $" [{DateTime.Now:HH:mm:ss}] {mensaje}";
+        }
+
 
         private void timerInicio_Tick(object sender, EventArgs e)
         {
@@ -40,7 +48,9 @@ namespace EnvioDetallesProveedores
 
                 cnn.setConnectionString(Config.GetConnectionString(tipoConexionStr));
 
-                var manejoComprobantes = new ProcesaComprobantesNegocio(cnn);
+
+
+                var manejoComprobantes = new ProcesaComprobantesNegocio(cnn, Config, _logger);
                 var comprobantes = manejoComprobantes.procesaComprobantes();
                 MessageBox.Show(comprobantes);
 

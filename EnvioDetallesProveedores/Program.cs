@@ -19,7 +19,7 @@ namespace EnvioDetallesProveedores
 
             IConfigurationRoot Config = ConfiguraInicio.ConfiguraInicioApp();
 
-            Application.Run(new Form1(Config));
+            Application.Run(new Form1(Config ));
         }
     }
 }

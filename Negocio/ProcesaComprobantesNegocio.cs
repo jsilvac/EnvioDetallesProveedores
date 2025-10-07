@@ -19,30 +19,32 @@ namespace Negocio
 {
     public class ProcesaComprobantesNegocio
     {
-       // private readonly ManejoComprobantesDatos _comprobanteData;
-        private readonly ProveedorNegocio _proveedorNegocio;
-        private readonly EmailService _emailService;
-        private readonly EmailFactory _emailFactory;
+ 
         private readonly IConfigurationRoot _config;
         private IConexion _icon;
-        private PDF _pdf;
+        private ILogger _logger;
+
+ 
         public ProcesaComprobantesNegocio(IConexion icon)
         {
             _icon = icon;
         }
-        public ProcesaComprobantesNegocio(IConexion icon, EmailFactory emailFactory)
+
+        public ProcesaComprobantesNegocio(IConexion icon,  IConfigurationRoot config, ILogger logger)
         {
             _icon = icon;
-            //_config = config;
-            _emailFactory = emailFactory; 
+            _config = config;
+            _logger = logger;
         }
         public List<ComprobantesDTO> ObtenerComprobantes()
         {
+            _logger.Log($"Iniciando obtención de comprobantes...",LogLevel.Warning);
             ManejoComprobantesDatos _comprobanteData = new ManejoComprobantesDatos(_icon);
             return _comprobanteData.ListarComprobantesDTO();
         }
         public string procesaComprobantes()
         {
+            _logger.Log($"Iniciando proceso de generación de comprobantes...", LogLevel.Info);
             var listaC = ObtenerComprobantes();
 
             // Agrupar por folio
@@ -61,13 +63,15 @@ namespace Negocio
                 Console.WriteLine($"PDF generado para folio {grupo.Key}: {pdfGenerado}");
             }
 
+            _logger.Log($"Proceso finalizado. Se generaron {comprobantesAgrupados.Count} archivos PDF.", LogLevel.Success);
             return $"Proceso finalizado. Se generaron {comprobantesAgrupados.Count} archivos PDF.";
         }
 
         private async Task<string> GenerarPdfConHeader(string rutaSalida, string nombreArchivo, List<ComprobantesDTO> comprobantes)
-        {
+         {
             try
             {
+                _logger.Log($"Generando PDF: {nombreArchivo}...", LogLevel.Info);
                 Directory.CreateDirectory(rutaSalida);
                 string exportFile = Path.Combine(rutaSalida, nombreArchivo);
 
@@ -194,8 +198,11 @@ namespace Negocio
 
                     /// aki region envio docuemnto por corre ////
                     /// 
-                    EmailService _emailService = new EmailService(_emailFactory);
-                    await _emailService.SendEmailAsync("Envío comprobantes contables", headerDto.Mensaje,[ "este","otro"], exportFile);
+                    _logger.Log($"Enviando correo para: {string.Join(", ", headerDto.Correos)}...", LogLevel.Info);
+                    EmailService _emailService = new EmailService(_config);
+                    //await _emailService.SendEmailViaMailchimpTransactionalAsync("Envío comprobantes contables", headerDto.Mensaje, headerDto.Correos, exportFile);
+                    await _emailService.SendEmailAsync("Envío comprobantes contables", headerDto.Mensaje,headerDto.Correos, exportFile);
+
 
                 }
 
