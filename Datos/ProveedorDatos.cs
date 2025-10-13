@@ -52,9 +52,15 @@ namespace Datos
         public Dto.ProveedorDTO ObtenerProveedorPorRut(string rut)
         {
             rut = rut.Replace("-", "");
-            string sql = $"SELECT * FROM eltit_conta.cuentascorrientes_datos_pago WHERE rut ='{rut}'";
+            string sql = "SELECT * FROM eltit_conta.cuentascorrientes_datos_pago WHERE rut = @rut";
 
-            var dt = _crud.ExecuteConsulta(sql);
+            var parametros = new Dictionary<string, object>
+                    {
+                        { "@rut", rut }
+                    };
+
+
+            var dt = _crud.ExecuteConsulta(sql,parametros);
             Dto.ProveedorDTO proveedor = null;
 
             if (dt != null && dt.Rows.Count > 0)

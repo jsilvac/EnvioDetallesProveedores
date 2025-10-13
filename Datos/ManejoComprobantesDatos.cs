@@ -99,9 +99,9 @@ namespace Negocio
                 Rut_Proveedor = row["rut_proveedor"]?.ToString(),
                 N_Proveedor = row["n_proveedor"]?.ToString(),
                 Correos = row["correos"]?.ToString()
-                                          .Split(';', StringSplitOptions.RemoveEmptyEntries)   // Separa en partes
-                                         .Select(correo => correo.Trim())                     // Recorre cada elemento y lo procesa
-                                         .ToList(),
+                                          .Split(';', StringSplitOptions.RemoveEmptyEntries) ?  // Separa en partes
+                                         .Select(correo => correo.Trim()) ?                    // Recorre cada elemento y lo procesa
+                                         .ToList()?? new List<string>(),
                 Numero = row["numero"]?.ToString(),
                 Banco = row["banco"]?.ToString(),
                 CtaCte_Proveedor = row["ctacte_proveedor"]?.ToString(),

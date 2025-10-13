@@ -60,13 +60,10 @@ namespace EnvioDetallesProveedores
             }
             catch (Exception ex)
             {
+                _logger.Log($"Error crítico: {ex.Message}\n{ex.StackTrace}", LogLevel.Error);
                 MessageBox.Show($"Error al enviar comprobantes: {ex.Message}");
             }
-            finally
-            {
-               
-
-            }
+     
         }
     }
 }

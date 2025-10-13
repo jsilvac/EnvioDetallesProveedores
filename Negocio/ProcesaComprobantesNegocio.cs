@@ -13,6 +13,7 @@ using iText.Kernel.Font;
 using Image = iText.Layout.Element.Image;
 using Datos;
 using Microsoft.Extensions.Configuration;
+using System.Collections.Specialized;
 
 
 namespace Negocio
@@ -158,7 +159,7 @@ namespace Negocio
                     table.AddCell(new Cell().Add(new Paragraph(headerDto.Num_Docus).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
                     string listaCorreos = string.Join("\n", headerDto.Correos);
                     table.AddCell(new Cell().Add(new Paragraph(listaCorreos).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
-                    table.AddCell(new Cell().Add(new Paragraph("$" + headerDto.Total.ToString()).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+                    table.AddCell(new Cell().Add(new Paragraph($" ${headerDto.Total:N0}").SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
 
                     document.Add(table);
                     var tipoPago="";
@@ -198,11 +199,14 @@ namespace Negocio
 
                     /// aki region envio docuemnto por corre ////
                     /// 
+                    System.Threading.Thread.Sleep(3000);
+
                     _logger.Log($"Enviando correo para: {string.Join(", ", headerDto.Correos)}...", LogLevel.Info);
                     EmailService _emailService = new EmailService(_config);
+                    var mensaje = armaBody(headerDto.Mensaje, headerDto);
                     //await _emailService.SendEmailViaMailchimpTransactionalAsync("Envío comprobantes contables", headerDto.Mensaje, headerDto.Correos, exportFile);
-                    await _emailService.SendEmailAsync("Envío comprobantes contables", headerDto.Mensaje,headerDto.Correos, exportFile);
-
+                    await _emailService.SendEmailAsync("Envío comprobantes contables",mensaje,headerDto.Correos, exportFile);
+                    _logger.Log($"Enviado con éxito...", LogLevel.Success);
 
                 }
 
@@ -211,6 +215,7 @@ namespace Negocio
             catch (Exception ex)
             {
                 Console.WriteLine($"Error generando PDF {nombreArchivo}: {ex.Message}");
+                _logger.Log($"No se pudo enviar el correo, Error: {ex.Message} .", LogLevel.Error);
                 return null;
             }
         }
@@ -221,6 +226,76 @@ namespace Negocio
             return _proveedorNegocio.ObtenerProveedorPorRut(xRut);
         }
 
+        public string armaBody(string mensaje, ComprobantesDTO header   )
+        {
+            string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
+            string base64Logo = "";
+            if (File.Exists(logoPath))
+            {
+                byte[] imageBytes = File.ReadAllBytes(logoPath);
+                base64Logo = Convert.ToBase64String(imageBytes);
+            }
 
+            return $@"
+                <html>
+                  <body style='font-family: Arial, Helvetica, sans-serif; background-color: #f9fafb; padding: 30px;'>
+                    <table style='max-width: 700px; margin: auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.1);'>
+                      <tr>
+                        <td style='background-color: #85CFF2; padding: 20px; border-top-left-radius: 10px; border-top-right-radius: 10px; text-align: center;'>
+                         <img src='cid:eltitLogo' alt='Logo Eltit' width='120' style='margin-bottom:15px;'/>
+                          <h2 style='color: #ffffff; margin: 0;'>Comprobante de Pago</h2>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style='padding: 30px; color: #333;'>
+                          <p style='font-size: 15px; margin-bottom: 10px;'>
+                            <strong>Señores:</strong><br>
+                            <span style='font-size: 16px; color: #E31E24;'>{header.N_Proveedor}</span><br>
+                            <em>RUT: {header.Proveedor}</em>
+                          </p>
+
+                          <p style='font-size: 14px; line-height: 1.6;'>
+                            Por medio de la presente informamos a usted que ha sido abonado en su cuenta el siguiente monto correspondiente a comprobantes procesados por nuestro sistema de pagos.
+                          </p>
+
+                          <div style='background-color: #f6fff0; border-left: 5px solid #8BC53F; padding: 15px; margin: 20px 0;'>
+                            <p style='font-size: 16px; color: #333; margin: 0;'>
+                              <strong>Monto abonado:</strong>
+                              <span style='color: #008000;'>${header.Total:N0}</span>
+                            </p>
+                            <p style='font-size: 14px; margin: 5px 0 0 0;'>
+                              <strong>Cuenta:</strong> {header.CtaCte_Proveedor}
+                            </p>
+                            <p style='font-size: 14px; margin: 5px 0 0 0;'>
+                              <strong>N° Documentos:</strong> {header.Num_Docus}
+                            </p>
+                          </div>
+
+                          <p style='font-size: 14px; margin-top: 25px;'>
+                            En caso de dudas o consultas, puede contactarse con el departamernto de proveedores!
+                          </p>
+                    
+
+                          <p style='font-size: 14px; margin-top: 25px; line-height: 1.4;'>
+                            Atentamente,<br>
+                            <strong>Departamento de Pago de Proveedores</strong><br>
+                            {header.Empresa}
+                          </p>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style='background-color: #f4f6f8; text-align: center; padding: 15px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;'>
+                          <p style='font-size: 12px; color: #777; margin: 0;'>
+                            Este correo fue generado automáticamente. Por favor, no responder directamente a este mensaje.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </body>
+                </html>";
+
+        }
     }
 }

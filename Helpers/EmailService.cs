@@ -38,15 +38,31 @@ namespace Helpers
                 IsBodyHtml = true
             };
 
+            string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
+
+            var htmlView = AlternateView.CreateAlternateViewFromString(body, null, "text/html");
+
+            if (File.Exists(logoPath))
+            {
+                var logo = new LinkedResource(logoPath)
+                {
+                    ContentId = "eltitLogo",
+                    TransferEncoding = System.Net.Mime.TransferEncoding.Base64
+                };
+                htmlView.LinkedResources.Add(logo);
+            }
+
+            message.AlternateViews.Add(htmlView);
+
             if (!string.IsNullOrEmpty(attachmentPath) && File.Exists(attachmentPath))
             {
                 message.Attachments.Add(new Attachment(attachmentPath));
             }
-            destinatarios = ["silvacastillojaime@gmail.com"];
+            destinatarios = ["silvacastillojaime@gmail.com","ryevilao@eltit.cl"];
             foreach (var dest in destinatarios)
                 message.To.Add(dest);                                                                                                                                                                                                                                                                             
 
-            await client.SendMailAsync(message);
+             await  client.SendMailAsync(message);
         }
 
         // Para Mailchimp Transactional (Mandrill)
