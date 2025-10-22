@@ -1,5 +1,5 @@
 ﻿
-namespace Repository
+namespace Helpers
 {
     public interface ILogger
     {
@@ -11,6 +11,6 @@ namespace Repository
         Info,
         Warning,
         Error,
-        Success
+        Success,
     }
 }

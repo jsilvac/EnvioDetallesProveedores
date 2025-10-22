@@ -39,7 +39,7 @@ namespace Negocio
         }
         public List<ComprobantesDTO> ObtenerComprobantes()
         {
-            _logger.Log($"Iniciando obtención de comprobantes...",LogLevel.Warning);
+            _logger.Log($"Iniciando obtención de comprobantes...",LogLevel.Info);
             ManejoComprobantesDatos _comprobanteData = new ManejoComprobantesDatos(_icon);
             return _comprobanteData.ListarComprobantesDTO();
         }
@@ -69,29 +69,31 @@ namespace Negocio
         }
 
         private async Task<string> GenerarPdfConHeader(string rutaSalida, string nombreArchivo, List<ComprobantesDTO> comprobantes)
-         {
+        {
+            string exportFile = "";
+            var headerDto = comprobantes.First();
+            string tipoPago = "";
+
             try
             {
                 _logger.Log($"Generando PDF: {nombreArchivo}...", LogLevel.Info);
                 Directory.CreateDirectory(rutaSalida);
-                string exportFile = Path.Combine(rutaSalida, nombreArchivo);
+                exportFile = Path.Combine(rutaSalida, nombreArchivo);
 
                 using (var writer = new PdfWriter(exportFile))
                 using (var pdf = new PdfDocument(writer))
                 using (var document = new Document(pdf))
                 {
-
                     var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
                     var comprobantesFiltrados = comprobantes.Where(c => c.Numeros.Contains(c.Numero.ToString())).ToList();
-
                     comprobantes = comprobantesFiltrados;
 
-                    var headerDto = comprobantes.First();
+                    headerDto = comprobantes.First();
 
                     string fecha = DateTime.Now.ToString("dd-MM-yyyy");
                     // --- AGREGAR LOGO  ---
                     string rutaLogo = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "logo.png");
-                   
+
                     PdfPage page = pdf.AddNewPage();
                     var pageSize = page.GetPageSize();
 
@@ -121,7 +123,7 @@ namespace Negocio
 
                     document.Add(new Paragraph("\n"));
 
-                    float[] cellWidth = { 20f, 80f, 80f, 20f, 80f, 50f, 60f }; 
+                    float[] cellWidth = { 20f, 80f, 80f, 20f, 80f, 50f, 60f };
                     Table table = new Table(UnitValue.CreatePercentArray(cellWidth))
                         .UseAllAvailableWidth();
 
@@ -137,7 +139,6 @@ namespace Negocio
                     // Filas detalle
                     foreach (var c in comprobantes)
                     {
-
                         table.AddCell(new Cell().Add(new Paragraph(c.Egreso).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
                         table.AddCell(new Cell().Add(new Paragraph(c.Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
                         table.AddCell(new Cell(1, 2).Add(new Paragraph(c.Glosa).SetFontSize(9)).SetTextAlignment(TextAlignment.LEFT));
@@ -162,13 +163,13 @@ namespace Negocio
                     table.AddCell(new Cell().Add(new Paragraph($" ${headerDto.Total:N0}").SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
 
                     document.Add(table);
-                    var tipoPago="";
+
                     var prov = ObtenerProveedor(headerDto.Proveedor);
-                    
+
                     if (prov.ModoPago != null)
                     {
-                        tipoPago= prov.ModoPago;
-                        
+                        tipoPago = prov.ModoPago;
+
                         switch (prov.ModoPago)
                         {
                             case "0":
@@ -196,19 +197,49 @@ namespace Negocio
 
                     document.Flush();
                     document.Close();
+                } 
 
-                    /// aki region envio docuemnto por corre ////
-                    /// 
-                    System.Threading.Thread.Sleep(3000);
+                _logger.Log("PDF generado y guardado exitosamente", LogLevel.Info);
 
-                    _logger.Log($"Enviando correo para: {string.Join(", ", headerDto.Correos)}...", LogLevel.Info);
-                    EmailService _emailService = new EmailService(_config);
-                    var mensaje = armaBody(headerDto.Mensaje, headerDto);
-                    //await _emailService.SendEmailViaMailchimpTransactionalAsync("Envío comprobantes contables", headerDto.Mensaje, headerDto.Correos, exportFile);
-                    await _emailService.SendEmailAsync("Envío comprobantes contables",mensaje,headerDto.Correos, exportFile);
-                    _logger.Log($"Enviado con éxito...", LogLevel.Success);
+               
+                System.Threading.Thread.Sleep(3000);
+                _logger.Log($"Enviando correo para: {string.Join(", ", headerDto.Correos)}...", LogLevel.Info);
+                EmailService _emailService = new EmailService(_config);
+                var mensaje = armaBody(headerDto.Mensaje, headerDto);
 
+                              
+                try
+                {
+                    if ((_config["EmailSettings:TipoEnvio"] ?? "").ToLower() == "smtp")
+                    {
+                        // Enviar por SMTP
+                        _logger.Log("Iniciando envío por SMTP...", LogLevel.Info);
+                        await _emailService.SendEmailAsync("Envío comprobantes contables", mensaje, headerDto.Correos, exportFile);
+                        _logger.Log("✅ SMTP - Envío completado, ahora el log de éxito...", LogLevel.Info);
+                        _logger.Log($"Enviado con éxito...", LogLevel.Success);
+                    }
+                    else if ((_config["EmailSettings:TipoEnvio"] ?? "").ToLower() == "api")
+                    {
+                        // Enviar por api 
+                        _logger.Log("Iniciando envío por API...", LogLevel.Info);
+                        await _emailService.SendEmailViaMailchimpTransactionalAsync("Envío comprobantes contables", headerDto.Mensaje, headerDto.Correos, exportFile);
+                        _logger.Log("✅ API - Envío completado, ahora el log de éxito...", LogLevel.Info);
+                        _logger.Log($"Enviado con éxito...", LogLevel.Success);
+                    }
+                    else
+                    {
+                        throw new Exception("Tipo de envío no reconocido en configuración.");
+                    }
+
+                    _logger.Log("✅✅✅ Llegó al log final después de todo el proceso", LogLevel.Success);
                 }
+                catch (Exception ex)
+                {
+                    _logger.Log($"❌ ERROR durante el proceso de envío: {ex.Message}", LogLevel.Error);
+                    throw;
+                }
+
+                _logger.Log($"Enviado con éxito...", LogLevel.Success);
 
                 return exportFile;
             }
@@ -226,7 +257,7 @@ namespace Negocio
             return _proveedorNegocio.ObtenerProveedorPorRut(xRut);
         }
 
-        public string armaBody(string mensaje, ComprobantesDTO header   )
+        public string armaBody(string mensaje, ComprobantesDTO header)
         {
             string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
             string base64Logo = "";
@@ -236,66 +267,25 @@ namespace Negocio
                 base64Logo = Convert.ToBase64String(imageBytes);
             }
 
-            return $@"
-                <html>
-                  <body style='font-family: Arial, Helvetica, sans-serif; background-color: #f9fafb; padding: 30px;'>
-                    <table style='max-width: 700px; margin: auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.1);'>
-                      <tr>
-                        <td style='background-color: #85CFF2; padding: 20px; border-top-left-radius: 10px; border-top-right-radius: 10px; text-align: center;'>
-                         <img src='cid:eltitLogo' alt='Logo Eltit' width='120' style='margin-bottom:15px;'/>
-                          <h2 style='color: #ffffff; margin: 0;'>Comprobante de Pago</h2>
-                        </td>
-                      </tr>
+            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Resources", "email_body_template.html");
 
-                      <tr>
-                        <td style='padding: 30px; color: #333;'>
-                          <p style='font-size: 15px; margin-bottom: 10px;'>
-                            <strong>Señores:</strong><br>
-                            <span style='font-size: 16px; color: #E31E24;'>{header.N_Proveedor}</span><br>
-                            <em>RUT: {header.Proveedor}</em>
-                          </p>
+            if (!File.Exists(templatePath))
+            {
+                return "Error: Plantilla de correo no encontrada.";
+            }
 
-                          <p style='font-size: 14px; line-height: 1.6;'>
-                            Por medio de la presente informamos a usted que ha sido abonado en su cuenta el siguiente monto correspondiente a comprobantes procesados por nuestro sistema de pagos.
-                          </p>
+            string bodyTemplate = File.ReadAllText(templatePath);
 
-                          <div style='background-color: #f6fff0; border-left: 5px solid #8BC53F; padding: 15px; margin: 20px 0;'>
-                            <p style='font-size: 16px; color: #333; margin: 0;'>
-                              <strong>Monto abonado:</strong>
-                              <span style='color: #008000;'>${header.Total:N0}</span>
-                            </p>
-                            <p style='font-size: 14px; margin: 5px 0 0 0;'>
-                              <strong>Cuenta:</strong> {header.CtaCte_Proveedor}
-                            </p>
-                            <p style='font-size: 14px; margin: 5px 0 0 0;'>
-                              <strong>N° Documentos:</strong> {header.Num_Docus}
-                            </p>
-                          </div>
+            string finalBody = bodyTemplate
+                .Replace("{{N_PROVEEDOR}}", header.N_Proveedor)
+                .Replace("{{RUT_PROVEEDOR}}", header.Proveedor)
+                .Replace("{{TOTAL_ABONADO}}", $"${header.Total:N0}")
+                .Replace("{{NUM_DOCUS}}", header.Num_Docus.ToString())
+                .Replace("{{EMPRESA}}", header.Empresa)
+                .Replace("{{MENSAJE_ADICIONAL}}", mensaje);
 
-                          <p style='font-size: 14px; margin-top: 25px;'>
-                            En caso de dudas o consultas, puede contactarse con el departamernto de proveedores!
-                          </p>
-                    
-
-                          <p style='font-size: 14px; margin-top: 25px; line-height: 1.4;'>
-                            Atentamente,<br>
-                            <strong>Departamento de Pago de Proveedores</strong><br>
-                            {header.Empresa}
-                          </p>
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td style='background-color: #f4f6f8; text-align: center; padding: 15px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;'>
-                          <p style='font-size: 12px; color: #777; margin: 0;'>
-                            Este correo fue generado automáticamente. Por favor, no responder directamente a este mensaje.
-                          </p>
-                        </td>
-                      </tr>
-                    </table>
-                  </body>
-                </html>";
-
+            return finalBody;
         }
+
     }
 }

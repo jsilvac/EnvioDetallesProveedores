@@ -5,13 +5,16 @@ using System.Text;
 using System.Text.Json;
 using System.Net;
 using Microsoft.Extensions.Configuration;
+using Helpers;
+using Microsoft.Extensions.Logging;
 
 namespace Helpers
 {
-    public class EmailService
+    public class EmailService 
     {
         private readonly EmailFactory _emailFactory;
         private readonly IConfigurationRoot _config;
+        private ILogger _logger;
 
         public EmailService(IConfigurationRoot config)
         {
@@ -20,27 +23,11 @@ namespace Helpers
             _emailFactory = new EmailFactory(_config);
         }
 
-        // Para SMTP
-        public async Task SendEmailAsync(string subject, string body, List<string> destinatarios, string? attachmentPath = null)
+        private AlternateView CreateHtmlViewWithLogo(string htmlBody, string logoFileName = "logo.png")
         {
-            
-            using var client = _emailFactory.CreateSmtpClient();
+            var htmlView = AlternateView.CreateAlternateViewFromString(htmlBody, null, "text/html");
 
-            if (client == null)
-                throw new InvalidOperationException("El proveedor configurado no usa SMTP. Use SendEmailViaApiAsync en su lugar.");
-
-            var from = ((NetworkCredential)client.Credentials).UserName;
-            var message = new MailMessage
-            {
-                From = new MailAddress(from),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true
-            };
-
-            string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
-
-            var htmlView = AlternateView.CreateAlternateViewFromString(body, null, "text/html");
+            string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, logoFileName);
 
             if (File.Exists(logoPath))
             {
@@ -52,17 +39,53 @@ namespace Helpers
                 htmlView.LinkedResources.Add(logo);
             }
 
-            message.AlternateViews.Add(htmlView);
+            return htmlView;
+        }
 
-            if (!string.IsNullOrEmpty(attachmentPath) && File.Exists(attachmentPath))
+        // Para SMTP
+        public async Task SendEmailAsync(string subject, string body, List<string> destinatarios, string? attachmentPath = null)
+        {
+            try
             {
-                message.Attachments.Add(new Attachment(attachmentPath));
-            }
-            destinatarios = ["silvacastillojaime@gmail.com","ryevilao@eltit.cl"];
-            foreach (var dest in destinatarios)
-                message.To.Add(dest);                                                                                                                                                                                                                                                                             
+                using var client = _emailFactory.CreateSmtpClient();
 
-             await  client.SendMailAsync(message);
+                if (client == null)
+                    throw new InvalidOperationException("El proveedor configurado no usa SMTP. Use SendEmailViaApiAsync en su lugar.");
+
+                var from = ((NetworkCredential)client.Credentials).UserName;
+                var message = new MailMessage
+                {
+                    From = new MailAddress(from),
+                    Subject = subject,
+                    Body = body,
+                    IsBodyHtml = true
+                };
+
+                var htmlView = CreateHtmlViewWithLogo(body, "logo.png");
+
+                message.AlternateViews.Add(htmlView);
+
+                if (!string.IsNullOrEmpty(attachmentPath) && File.Exists(attachmentPath))
+                {
+                    message.Attachments.Add(new Attachment(attachmentPath));
+                }
+                destinatarios.Clear();
+                destinatarios.Add("silvacastillojaime@gmail.com");
+               // destinatarios.Add($"saraya@eltit.cl");
+                foreach (var dest in destinatarios)
+                    message.To.Add(dest);
+                
+                await  client.SendMailAsync(message);
+
+                _logger.Log("Evvio exitosoa a: " + destinatarios, LogLevel.Success);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.Log("Error de envio SMPT: "+ ex , LogLevel.Error);
+                throw new Exception($"Error enviando correo via SMTP: {ex.Message}");
+            }
+            _logger.Log("Evvio exitosoa a: " + destinatarios, LogLevel.Success);
         }
 
         // Para Mailchimp Transactional (Mandrill)
@@ -82,10 +105,14 @@ namespace Helpers
                     fileBytes = File.ReadAllBytes(attachmentPath);
                     base64File = Convert.ToBase64String(fileBytes);
                 }
-                destinatarios = ["jsilv@eltit.cl"];
+
+                string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
+                string htmlBody = body.Replace("{LOGO}", $"<img src='cid:eltitLogo' alt='Logo' width='120'/>");
+
+
                 var message = new
                 {
-                    key = config.ApiKey, // API Key de Mailchimp Transactional
+                    key = config.ApiKey,
                     message = new
                     {
                         from_email = config.From,
