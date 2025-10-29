@@ -5,8 +5,6 @@ using System.Text;
 using System.Text.Json;
 using System.Net;
 using Microsoft.Extensions.Configuration;
-using Helpers;
-using Microsoft.Extensions.Logging;
 
 namespace Helpers
 {

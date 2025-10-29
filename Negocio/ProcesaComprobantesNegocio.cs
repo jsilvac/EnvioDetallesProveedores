@@ -13,7 +13,6 @@ using iText.Kernel.Font;
 using Image = iText.Layout.Element.Image;
 using Datos;
 using Microsoft.Extensions.Configuration;
-using System.Collections.Specialized;
 
 
 namespace Negocio
@@ -79,20 +78,19 @@ namespace Negocio
                 _logger.Log($"Generando PDF: {nombreArchivo}...", LogLevel.Info);
                 Directory.CreateDirectory(rutaSalida);
                 exportFile = Path.Combine(rutaSalida, nombreArchivo);
+                string fecha = DateTime.Now.ToString("dd-MM-yyyy");
+                string rutaLogo = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "logo.png");
+                var headers = new[] { "EGRESO", "PROVEEDOR", "GLOSA", "TD", "NUMERO", "MONTO" };
+                float[] cellWidth = { 20f, 80f, 80f, 20f, 80f, 50f, 60f };
+
+                var comprobantesFiltrados = comprobantes.Where(c => c.Numeros.Contains(c.Numero.ToString())).ToList();
+                comprobantes = comprobantesFiltrados;
 
                 using (var writer = new PdfWriter(exportFile))
                 using (var pdf = new PdfDocument(writer))
                 using (var document = new Document(pdf))
                 {
                     var bold = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
-                    var comprobantesFiltrados = comprobantes.Where(c => c.Numeros.Contains(c.Numero.ToString())).ToList();
-                    comprobantes = comprobantesFiltrados;
-
-                    headerDto = comprobantes.First();
-
-                    string fecha = DateTime.Now.ToString("dd-MM-yyyy");
-                    // --- AGREGAR LOGO  ---
-                    string rutaLogo = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "logo.png");
 
                     PdfPage page = pdf.AddNewPage();
                     var pageSize = page.GetPageSize();
@@ -123,121 +121,27 @@ namespace Negocio
 
                     document.Add(new Paragraph("\n"));
 
-                    float[] cellWidth = { 20f, 80f, 80f, 20f, 80f, 50f, 60f };
-                    Table table = new Table(UnitValue.CreatePercentArray(cellWidth))
-                        .UseAllAvailableWidth();
-
-                    var headers = new[] { "EGRESO", "PROVEEDOR", "GLOSA", "TD", "NUMERO", "MONTO" };
-                    foreach (var h in headers)
-                    {
-                        if (h == "GLOSA")
-                            table.AddHeaderCell(new Cell(1, 2).Add(new Paragraph(h).SetFont(bold).SetFontSize(10)));
-                        else
-                            table.AddHeaderCell(new Cell().Add(new Paragraph(h).SetFont(bold).SetFontSize(10)));
-                    }
-
-                    // Filas detalle
-                    foreach (var c in comprobantes)
-                    {
-                        table.AddCell(new Cell().Add(new Paragraph(c.Egreso).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
-                        table.AddCell(new Cell().Add(new Paragraph(c.Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
-                        table.AddCell(new Cell(1, 2).Add(new Paragraph(c.Glosa).SetFontSize(9)).SetTextAlignment(TextAlignment.LEFT));
-                        table.AddCell(new Cell().Add(new Paragraph(c.Td).SetFontSize(9)));
-                        table.AddCell(new Cell().Add(new Paragraph(c.Numero.ToString()).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
-                        table.AddCell(new Cell().Add(new Paragraph($"${c.Monto:N0}").SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
-                    }
-                    table.AddCell(new Cell().Add(new Paragraph("PROVEEDOR").SetFont(bold).SetFontSize(10)).SetTextAlignment(TextAlignment.LEFT));
-                    table.AddCell(new Cell().Add(new Paragraph("NOMBRE").SetFont(bold).SetFontSize(10)).SetTextAlignment(TextAlignment.LEFT));
-                    table.AddCell(new Cell().Add(new Paragraph("BANCO").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
-                    table.AddCell(new Cell().Add(new Paragraph("CUENTA").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
-                    table.AddCell(new Cell().Add(new Paragraph("N° DCTS.").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
-                    table.AddCell(new Cell().Add(new Paragraph("CORREO(S)").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
-                    table.AddCell(new Cell().Add(new Paragraph("TOTAL").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.CENTER)));
-                    table.AddCell(new Cell().Add(new Paragraph(headerDto.Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
-                    table.AddCell(new Cell().Add(new Paragraph(headerDto.N_Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.LEFT));
-                    table.AddCell(new Cell().Add(new Paragraph(headerDto.Banco).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
-                    table.AddCell(new Cell().Add(new Paragraph(headerDto.CtaCte_Proveedor).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
-                    table.AddCell(new Cell().Add(new Paragraph(headerDto.Num_Docus).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
-                    string listaCorreos = string.Join("\n", headerDto.Correos);
-                    table.AddCell(new Cell().Add(new Paragraph(listaCorreos).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
-                    table.AddCell(new Cell().Add(new Paragraph($" ${headerDto.Total:N0}").SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+                    Table table = GeneraTablaComprobantes(comprobantes, headerDto, bold, headers, cellWidth);
 
                     document.Add(table);
 
                     var prov = ObtenerProveedor(headerDto.Proveedor);
 
-                    if (prov.ModoPago != null)
-                    {
-                        tipoPago = prov.ModoPago;
-
-                        switch (prov.ModoPago)
-                        {
-                            case "0":
-                                tipoPago = "CANCELACION DE FACTURAS VIA CHEQUE";
-                                break;
-                            case "1":
-                                tipoPago = "CANCELACION DE FACTURAS VIA VALE VISTA";
-                                break;
-                            case "3":
-                                tipoPago = "CANCELACION DE FACTURAS VIA TRANSFERENCIA BANCARIA";
-                                break;
-                            default:
-                                tipoPago = "CANCELACION DE FACTURAS";
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        tipoPago = "CANCELACION DE FACTURAS";
-                    }
-
-                    document.Add(new Paragraph($"{tipoPago}\n").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
+                    document.Add(new Paragraph($"{prov.TipoPago}\n").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
                     document.Add(new Paragraph($"DEPARTAMENTO PAGO DE PROVEEDORES\n").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
                     document.Add(new Paragraph($" {headerDto.Empresa}").SetFontSize(10).SetTextAlignment(TextAlignment.CENTER));
 
                     document.Flush();
                     document.Close();
-                } 
+                }
 
                 _logger.Log("PDF generado y guardado exitosamente", LogLevel.Info);
-
-               
                 System.Threading.Thread.Sleep(3000);
                 _logger.Log($"Enviando correo para: {string.Join(", ", headerDto.Correos)}...", LogLevel.Info);
-                EmailService _emailService = new EmailService(_config);
-                var mensaje = armaBody(headerDto.Mensaje, headerDto);
 
-                              
-                try
-                {
-                    if ((_config["EmailSettings:TipoEnvio"] ?? "").ToLower() == "smtp")
-                    {
-                        // Enviar por SMTP
-                        _logger.Log("Iniciando envío por SMTP...", LogLevel.Info);
-                        await _emailService.SendEmailAsync("Envío comprobantes contables", mensaje, headerDto.Correos, exportFile);
-                        _logger.Log("✅ SMTP - Envío completado, ahora el log de éxito...", LogLevel.Info);
-                        _logger.Log($"Enviado con éxito...", LogLevel.Success);
-                    }
-                    else if ((_config["EmailSettings:TipoEnvio"] ?? "").ToLower() == "api")
-                    {
-                        // Enviar por api 
-                        _logger.Log("Iniciando envío por API...", LogLevel.Info);
-                        await _emailService.SendEmailViaMailchimpTransactionalAsync("Envío comprobantes contables", headerDto.Mensaje, headerDto.Correos, exportFile);
-                        _logger.Log("✅ API - Envío completado, ahora el log de éxito...", LogLevel.Info);
-                        _logger.Log($"Enviado con éxito...", LogLevel.Success);
-                    }
-                    else
-                    {
-                        throw new Exception("Tipo de envío no reconocido en configuración.");
-                    }
+                int retorno = await EnviaMail(exportFile, headerDto);
 
-                    _logger.Log("✅✅✅ Llegó al log final después de todo el proceso", LogLevel.Success);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Log($"❌ ERROR durante el proceso de envío: {ex.Message}", LogLevel.Error);
-                    throw;
-                }
+
 
                 _logger.Log($"Enviado con éxito...", LogLevel.Success);
 
@@ -251,6 +155,88 @@ namespace Negocio
             }
         }
 
+        private async Task<int> EnviaMail(string exportFile, ComprobantesDTO headerDto)
+        {
+            EmailService _emailService = new EmailService(_config);
+            var mensaje = armaBody(headerDto.Mensaje, headerDto);
+            string tipo = (_config["EmailSettings:TipoEnvio"] ?? "").ToLower();
+
+            try
+            {
+                if (tipo.Equals("smtp"))
+                {
+                    // Enviar por SMTP
+                    _logger.Log("Iniciando envío por SMTP...", LogLevel.Info);
+                    await _emailService.SendEmailAsync("Envío comprobantes contables", mensaje, headerDto.Correos, exportFile);
+                    _logger.Log("✅ SMTP - Envío completado, ahora el log de éxito...", LogLevel.Info);
+                    _logger.Log($"Enviado con éxito...", LogLevel.Success);
+                    return 0;
+                }
+                else if (tipo.Equals("api"))
+                {
+                    // Enviar por api 
+                    _logger.Log("Iniciando envío por API...", LogLevel.Info);
+                    await _emailService.SendEmailViaMailchimpTransactionalAsync("Envío comprobantes contables", mensaje, headerDto.Correos, exportFile);
+                    _logger.Log("✅ API - Envío completado, ahora el log de éxito...", LogLevel.Info);
+                    _logger.Log($"Enviado con éxito...", LogLevel.Success);
+                    return 0;
+                }
+                else
+                {
+                    throw new Exception("Tipo de envío no reconocido en configuración.");
+                    return 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Log($"❌ ERROR durante el proceso de envío: {ex.Message}", LogLevel.Error);
+                throw new Exception("Tipo de envío no reconocido en configuración:" + ex.Message);
+                return 1;
+            }
+        }
+
+        private static Table GeneraTablaComprobantes(List<ComprobantesDTO> comprobantes, ComprobantesDTO headerDto, PdfFont bold, string[] headers, float[] cellWidth)
+        {
+            Table table = new Table(UnitValue.CreatePercentArray(cellWidth))
+                                    .UseAllAvailableWidth();
+
+            foreach (var h in headers)
+            {
+                if (h == "GLOSA")
+                    table.AddHeaderCell(new Cell(1, 2).Add(new Paragraph(h).SetFont(bold).SetFontSize(10)));
+                else
+                    table.AddHeaderCell(new Cell().Add(new Paragraph(h).SetFont(bold).SetFontSize(10)));
+            }
+
+            // Filas detalle
+            foreach (var c in comprobantes)
+            {
+                table.AddCell(new Cell().Add(new Paragraph(c.Egreso).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
+                table.AddCell(new Cell().Add(new Paragraph(c.Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
+                table.AddCell(new Cell(1, 2).Add(new Paragraph(c.Glosa).SetFontSize(9)).SetTextAlignment(TextAlignment.LEFT));
+                table.AddCell(new Cell().Add(new Paragraph(c.Td).SetFontSize(9)));
+                table.AddCell(new Cell().Add(new Paragraph(c.Numero.ToString()).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
+                table.AddCell(new Cell().Add(new Paragraph($"${c.Monto:N0}").SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
+            }
+            table.AddCell(new Cell().Add(new Paragraph("PROVEEDOR").SetFont(bold).SetFontSize(10)).SetTextAlignment(TextAlignment.LEFT));
+            table.AddCell(new Cell().Add(new Paragraph("NOMBRE").SetFont(bold).SetFontSize(10)).SetTextAlignment(TextAlignment.LEFT));
+            table.AddCell(new Cell().Add(new Paragraph("BANCO").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
+            table.AddCell(new Cell().Add(new Paragraph("CUENTA").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
+            table.AddCell(new Cell().Add(new Paragraph("N° DCTS.").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
+            table.AddCell(new Cell().Add(new Paragraph("CORREO(S)").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.LEFT)));
+            table.AddCell(new Cell().Add(new Paragraph("TOTAL").SetFont(bold).SetFontSize(10).SetTextAlignment(TextAlignment.CENTER)));
+            table.AddCell(new Cell().Add(new Paragraph(headerDto.Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.RIGHT));
+            table.AddCell(new Cell().Add(new Paragraph(headerDto.N_Proveedor).SetFontSize(9)).SetTextAlignment(TextAlignment.LEFT));
+            table.AddCell(new Cell().Add(new Paragraph(headerDto.Banco).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+            table.AddCell(new Cell().Add(new Paragraph(headerDto.CtaCte_Proveedor).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+            table.AddCell(new Cell().Add(new Paragraph(headerDto.Num_Docus).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+            string listaCorreos = string.Join("\n", headerDto.Correos);
+            table.AddCell(new Cell().Add(new Paragraph(listaCorreos).SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+            table.AddCell(new Cell().Add(new Paragraph($" ${headerDto.Total:N0}").SetFontSize(9).SetTextAlignment(TextAlignment.RIGHT)));
+            
+            return table;
+        }
+
         public ProveedorDTO  ObtenerProveedor(string xRut)
         {
             ProveedorDatos _proveedorNegocio = new ProveedorDatos(_icon);
@@ -261,6 +247,7 @@ namespace Negocio
         {
             string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo.png");
             string base64Logo = "";
+
             if (File.Exists(logoPath))
             {
                 byte[] imageBytes = File.ReadAllBytes(logoPath);

@@ -1,7 +1,6 @@
 
 using Negocio;
 using Repository;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 using Microsoft.Extensions.Configuration;
 using Helpers;
 
