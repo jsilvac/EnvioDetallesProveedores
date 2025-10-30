@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Comprobante de Pago</title>
+  </head>
+  <body style='font-family: Arial, Helvetica, sans-serif; background-color: #f9fafb; padding: 30px;'>
+    <table style='max-width: 700px; margin: auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.1);'>
+      <tr>
+        <td style='background-color: #85CFF2; padding: 20px; border-top-left-radius: 10px; border-top-right-radius: 10px; text-align: center;'>
+          <img src='cid:eltitLogo' alt='Logo Eltit' width='120' style='margin-bottom:15px;'/>
+          <h2 style='color: #ffffff; margin: 0;'>Comprobante de Pago</h2>
+        </td>
+      </tr>
+
+      <tr>
+        <td style='padding: 30px; color: #333;'>
+          <p style='font-size: 15px; margin-bottom: 10px;'>
+            <strong>Señores:</strong><br>
+            <span style='font-size: 16px; color: #E31E24;'>{{N_PROVEEDOR}}</span><br>
+            <em>RUT: {{RUT_PROVEEDOR}}</em>
+          </p>
+
+          <p style='font-size: 14px; line-height: 1.6;'>
+            Por medio de la presente informamos a usted que ha sido abonado en su cuenta el siguiente monto correspondiente a comprobantes procesados por nuestro sistema de pagos.
+          </p>
+
+          <div style='background-color: #f6fff0; border-left: 5px solid #8BC53F; padding: 15px; margin: 20px 0;'>
+            <p style='font-size: 16px; color: #333; margin: 0;'>
+              <strong>Monto abonado:</strong>
+              <span style='color: #008000;'>{{TOTAL_ABONADO}}</span>
+            </p>
+            <p style='font-size: 14px; margin: 5px 0 0 0;'>
+              <strong>N° Documentos:</strong> {{NUM_DOCUS}}
+            </p>
+          </div>
+
+          <!--<p style='font-size: 14px; margin-top: 25px;'>
+            {{MENSAJE_ADICIONAL}}
+          </p>-->
+            
+
+          <p style='font-size: 14px; margin-top: 35px; line-height: 1.4;'>
+            Atentamente,<br>
+            <strong>Departamento de Pago de Proveedores</strong><br>
+            {{EMPRESA}}
+          </p>
+        </td>
+      </tr>
+
+      <tr>
+        <td style='background-color: #f4f6f8; text-align: center; padding: 15px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;'>
+          <p style='font-size: 12px; color: #777; margin: 0;'>
+            Este correo fue generado automáticamente. Por favor, no responder directamente a este mensaje.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

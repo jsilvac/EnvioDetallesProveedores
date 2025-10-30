@@ -4,8 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
-//using static Org.BouncyCastle.Math.EC.ECCurve;
-using Microsoft.Extensions.Configuration;
 
 namespace Repository
 {

@@ -1,22 +1,17 @@
 ﻿using Repository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Data;
 
 namespace Datos
 {
-    public class CrudManager
+    public class CrudManager : IDisposable
     {
-        private readonly IConexion _conexion;
+        private  IConexion _conexion;
         private bool _disposed = false;
 
       
         public CrudManager(IConexion conexion)
         {
-            _conexion = conexion;
+            _conexion = conexion ??throw new ArgumentNullException(nameof(conexion)) ;
         }
 
         public int ExecuteCommand(string sql,Dictionary<string, object> parametros = null) 
@@ -85,6 +80,36 @@ namespace Datos
         {
             if (!_conexion.IsConected)
                 _conexion.Open();
+        }
+
+        // Implementación del patrón Dispose
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    // Liberar recursos manejados
+                    if (_conexion != null && _conexion.IsConected)
+                    {
+                        _conexion.Close();
+                    }
+                }
+
+                _disposed = true;
+            }
+        }
+
+        // Destructor por si acaso no se llama Dispose
+        ~CrudManager()
+        {
+            Dispose(false);
         }
     }
 }

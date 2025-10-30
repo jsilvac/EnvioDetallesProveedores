@@ -67,8 +67,8 @@ namespace Negocio
                   dt.monto,
                   cb.numero AS numeros
                 FROM
-                  eltit_conta.conta_comprobante_cabeza AS cb 
-                  INNER JOIN eltit_conta.conta_comprobante_detalle AS dt 
+                  conta_comprobante_cabeza AS cb 
+                  INNER JOIN conta_comprobante_detalle AS dt 
                     ON dt.folio = cb.folio 
                     AND dt.fecha = cb.fecha 
                     AND dt.proveedor = cb.rut_proveedor 
@@ -99,9 +99,9 @@ namespace Negocio
                 Rut_Proveedor = row["rut_proveedor"]?.ToString(),
                 N_Proveedor = row["n_proveedor"]?.ToString(),
                 Correos = row["correos"]?.ToString()
-                                          .Split(';', StringSplitOptions.RemoveEmptyEntries)   // Separa en partes
-                                         .Select(correo => correo.Trim())                     // Recorre cada elemento y lo procesa
-                                         .ToList(),
+                                          .Split(';', StringSplitOptions.RemoveEmptyEntries) ?  // Separa en partes
+                                         .Select(correo => correo.Trim()) ?                    // Recorre cada elemento y lo procesa
+                                         .ToList()?? new List<string>(),
                 Numero = row["numero"]?.ToString(),
                 Banco = row["banco"]?.ToString(),
                 CtaCte_Proveedor = row["ctacte_proveedor"]?.ToString(),

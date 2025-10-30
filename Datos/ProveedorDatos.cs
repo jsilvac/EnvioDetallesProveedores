@@ -1,8 +1,5 @@
 ﻿using MySql.Data.MySqlClient;
 using Repository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -48,23 +45,22 @@ namespace Datos
 
             return proveedor;
         }
-
         public Dto.ProveedorDTO ObtenerProveedorPorRut(string rut)
         {
-            rut = rut.Replace("-", "");
-            string sql = $"SELECT * FROM eltit_conta.cuentascorrientes_datos_pago WHERE rut ='{rut}'";
-
-            var dt = _crud.ExecuteConsulta(sql);
-            Dto.ProveedorDTO proveedor = null;
-
-            if (dt != null && dt.Rows.Count > 0)
-            {
-                // Tomamos solo la primera fila encontrada
+            rut = rut.Replace("-", ""); 
+            string sql = "SELECT * FROM eltit_conta.cuentascorrientes_datos_pago WHERE rut = @rut"; 
+            
+            var parametros = new Dictionary { 
+                { "@rut", rut } 
+            };
+            var dt = _crud.ExecuteConsulta(sql, parametros); 
+            Dto.ProveedorDTO proveedor = null; 
+            
+            if (dt != null && dt.Rows.Count > 0) {
                 proveedor = fillProveedores(dt.Rows[0]);
-            }
-
-            return proveedor;
-
+            } 
+            
+            return proveedor; 
         }
     }
 }

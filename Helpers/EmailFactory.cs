@@ -17,7 +17,6 @@ namespace Helpers
         {
             string provider = _configuration["EmailSettings:DefaultProvider"] ?? "Gmail";
 
-            // Si el proveedor es Mailchimp Transactional (o Mailchimp en general), no usamos SMTP
             if (provider.StartsWith("MailchimpTransactional", StringComparison.OrdinalIgnoreCase))
                 return null;
 
