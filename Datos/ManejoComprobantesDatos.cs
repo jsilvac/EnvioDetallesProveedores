@@ -99,15 +99,17 @@ namespace Negocio
                 Rut_Proveedor = row["rut_proveedor"]?.ToString(),
                 N_Proveedor = row["n_proveedor"]?.ToString(),
                 Correos = row["correos"]?.ToString()
-                                          .Split(';', StringSplitOptions.RemoveEmptyEntries) ?  // Separa en partes
-                                         .Select(correo => correo.Trim()) ?                    // Recorre cada elemento y lo procesa
-                                         .ToList()?? new List<string>(),
+                                         ? .Split(';', StringSplitOptions.RemoveEmptyEntries)   // Separa en partes
+                                         ? .Select(correo => correo.Trim())                     // Recorre cada elemento y lo procesa
+                                         ? .ToList()?? new List<string>(),
                 Numero = row["numero"]?.ToString(),
                 Banco = row["banco"]?.ToString(),
                 CtaCte_Proveedor = row["ctacte_proveedor"]?.ToString(),
-                Total = Convert.ToDouble(row["total"]?.ToString()),
+                //Total = Convert.ToDouble(row["total"]?.ToString()),
+                Total = row["total"] != DBNull.Value && double.TryParse(row["total"].ToString(), out var total) ? total : 0.0,
                 Num_Docus = row["num_docus"]?.ToString(),
-                EstadoEnvio = Convert.ToInt32(row["estadoenvio"]),
+                //EstadoEnvio = Convert.ToInt32(row["estadoenvio"]),
+                EstadoEnvio = row["estadoenvio"] != DBNull.Value && int.TryParse(row["estadoenvio"].ToString(), out var estadoEnvio) ? estadoEnvio : 0,
                 Rut_Empresa = row["rut_empresa"]?.ToString(),
                 Empresa = row["empresa"]?.ToString(),
                 Mensaje = row["mensaje"]?.ToString(),
@@ -115,7 +117,8 @@ namespace Negocio
                 Proveedor = row["proveedor"]?.ToString(),
                 Glosa = row["glosa"]?.ToString(),
                 Td = row["td"]?.ToString(),
-                Monto = Convert.ToDouble(row["monto"]?.ToString()),
+                //Monto = Convert.ToDouble(row["monto"]?.ToString()),
+                Monto = row["monto"] != DBNull.Value && double.TryParse(row["monto"].ToString(), out var monto) ? monto : 0.0,
                 Numeros = row["numeros"]?.ToString()
                                             .Split(' ', StringSplitOptions.RemoveEmptyEntries)  // separa por espacios
                                            .ToList(),

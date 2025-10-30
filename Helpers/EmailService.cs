@@ -14,10 +14,10 @@ namespace Helpers
         private readonly IConfigurationRoot _config;
         private ILogger _logger;
 
-        public EmailService(IConfigurationRoot config)
+        public EmailService(IConfigurationRoot config, ILogger logger)
         {
-            // _emailFactory = emailFactory;
             _config = config;
+            _logger = logger;
             _emailFactory = new EmailFactory(_config);
         }
 

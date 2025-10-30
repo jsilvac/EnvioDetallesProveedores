@@ -48,7 +48,7 @@ namespace Negocio
             {
                 _logger.Log($"Iniciando proceso de generación de comprobantes...", LogLevel.Info);
                 var listaC = ObtenerComprobantes();
-
+                string rutaSalida = _config["PdfSettings:OutputPath"];
                 // Agrupar por folio
                 var comprobantesAgrupados = listaC
                     .GroupBy(c => c.Folio)
@@ -57,7 +57,7 @@ namespace Negocio
                 foreach (var grupo in comprobantesAgrupados)
                 {
                     var pdfGenerado = GenerarPdfConHeader(
-                        @"C:\Exportados",
+                        rutaSalida,
                         $"Comprobante_{grupo.Key}.pdf",
                         grupo.ToList()
                     );
@@ -82,6 +82,7 @@ namespace Negocio
             string exportFile = "";
             var headerDto = comprobantes.First();
             string tipoPago = "";
+
 
             try
             {
@@ -146,7 +147,7 @@ namespace Negocio
                 }
 
                 _logger.Log("PDF generado y guardado exitosamente", LogLevel.Info);
-                System.Threading.Thread.Sleep(3000);
+                await Task.Delay(3000);
                 _logger.Log($"Enviando correo para: {string.Join(", ", headerDto.Correos)}...", LogLevel.Info);
 
                 int retorno = await EnviaMail(exportFile, headerDto);
@@ -167,7 +168,7 @@ namespace Negocio
 
         private async Task<int> EnviaMail(string exportFile, ComprobantesDTO headerDto)
         {
-            EmailService _emailService = new EmailService(_config);
+            EmailService _emailService = new EmailService(_config, _logger);
             var mensaje = armaBody(headerDto.Mensaje, headerDto);
             string tipo = (_config["EmailSettings:TipoEnvio"] ?? "").ToLower();
 
