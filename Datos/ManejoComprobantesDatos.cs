@@ -67,8 +67,8 @@ namespace Negocio
                   dt.monto,
                   cb.numero AS numeros
                 FROM
-                  eltit_conta.conta_comprobante_cabeza AS cb 
-                  INNER JOIN eltit_conta.conta_comprobante_detalle AS dt 
+                  conta_comprobante_cabeza AS cb 
+                  INNER JOIN conta_comprobante_detalle AS dt 
                     ON dt.folio = cb.folio 
                     AND dt.fecha = cb.fecha 
                     AND dt.proveedor = cb.rut_proveedor 

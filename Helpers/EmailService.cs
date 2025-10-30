@@ -67,9 +67,9 @@ namespace Helpers
                 {
                     message.Attachments.Add(new Attachment(attachmentPath));
                 }
-                destinatarios.Clear();
-                destinatarios.Add("silvacastillojaime@gmail.com");
-               // destinatarios.Add($"saraya@eltit.cl");
+                //destinatarios.Clear();
+                //destinatarios.Add("silvacastillojaime@gmail.com");
+                //destinatarios.Add($"saraya@eltit.cl");
                 foreach (var dest in destinatarios)
                     message.To.Add(dest);
                 

@@ -44,27 +44,37 @@ namespace Negocio
         }
         public string procesaComprobantes()
         {
-            _logger.Log($"Iniciando proceso de generación de comprobantes...", LogLevel.Info);
-            var listaC = ObtenerComprobantes();
-
-            // Agrupar por folio
-            var comprobantesAgrupados = listaC
-                .GroupBy(c => c.Folio)
-                .ToList();
-
-            foreach (var grupo in comprobantesAgrupados)
+            try
             {
-                var pdfGenerado = GenerarPdfConHeader(
-                    @"C:\Exportados",
-                    $"Comprobante_{grupo.Key}.pdf",
-                    grupo.ToList()
-                );
+                _logger.Log($"Iniciando proceso de generación de comprobantes...", LogLevel.Info);
+                var listaC = ObtenerComprobantes();
 
-                Console.WriteLine($"PDF generado para folio {grupo.Key}: {pdfGenerado}");
+                // Agrupar por folio
+                var comprobantesAgrupados = listaC
+                    .GroupBy(c => c.Folio)
+                    .ToList();
+
+                foreach (var grupo in comprobantesAgrupados)
+                {
+                    var pdfGenerado = GenerarPdfConHeader(
+                        @"C:\Exportados",
+                        $"Comprobante_{grupo.Key}.pdf",
+                        grupo.ToList()
+                    );
+
+                    Console.WriteLine($"PDF generado para folio {grupo.Key}: {pdfGenerado}");
+                }
+
+                _logger.Log($"Proceso finalizado. Se generaron {comprobantesAgrupados.Count} archivos PDF.", LogLevel.Success);
+                return $"Proceso finalizado. Se generaron {comprobantesAgrupados.Count} archivos PDF.";
+
+
             }
-
-            _logger.Log($"Proceso finalizado. Se generaron {comprobantesAgrupados.Count} archivos PDF.", LogLevel.Success);
-            return $"Proceso finalizado. Se generaron {comprobantesAgrupados.Count} archivos PDF.";
+            catch (Exception ex)
+            {
+                _logger.Log($"Error en el proceso de generación de comprobantes: {ex.Message}", LogLevel.Error);
+                return $"Error en el proceso de generación de comprobantes: {ex.Message}";
+            }
         }
 
         private async Task<string> GenerarPdfConHeader(string rutaSalida, string nombreArchivo, List<ComprobantesDTO> comprobantes)
